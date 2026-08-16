@@ -251,6 +251,19 @@ input.num-in{font-family:var(--mono); font-variant-numeric:tabular-nums}
 
 /* ---------- misc ---------- */
 .warn{background:#FDF6E9; border-color:#F0DDB8}
+.sheet{
+  position:fixed; inset:0; background:rgba(11,30,51,.45); z-index:60; display:flex;
+  align-items:flex-end; justify-content:center; padding:14px;
+  padding-bottom:calc(14px + env(safe-area-inset-bottom));
+}
+.sheet-card{
+  background:#fff; border:1px solid var(--line); border-radius:var(--r); box-shadow:var(--shadow);
+  padding:14px; width:100%; max-width:560px; max-height:82vh; overflow:auto;
+}
+.sheet-text{
+  width:100%; min-height:38vh; font-family:var(--mono); font-size:16px; line-height:1.4;
+  border:1px solid var(--line); border-radius:10px; padding:10px; background:var(--paper);
+}
 #toast{
   position:fixed; left:50%; bottom:calc(18px + env(safe-area-inset-bottom)); transform:translateX(-50%) translateY(14px);
   background:var(--ink); color:#fff; padding:10px 15px; border-radius:11px; font-size:13.5px;
@@ -1218,18 +1231,127 @@ function backupName() { return "runway-backup-" + todayISO() + ".json"; }
 
 function serialise() { return JSON.stringify(state, null, 2); }
 
-function doExport() {
-  var blob = new Blob([serialise()], { type: "application/json" });
-  var url = URL.createObjectURL(blob);
+function isIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+         (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+}
+
+function isStandalone() {
+  if (navigator.standalone) return true;
+  return !!(window.matchMedia && window.matchMedia("(display-mode: standalone)").matches);
+}
+
+function canShareFile(file) {
+  try {
+    return !!(file && navigator.share && navigator.canShare && navigator.canShare({ files: [file] }));
+  } catch (e) { return false; }
+}
+
+/* Returns false when the browser ignores the download attribute, so the
+   caller can fall back instead of claiming a save that never happened. */
+function anchorDownload(text, name) {
   var a = document.createElement("a");
+  if (!("download" in a)) return false;
+  var url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
   a.href = url;
-  a.download = backupName();
+  a.download = name;
   a.rel = "noopener";
+  a.style.display = "none";
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
-  toast("Backup saved as " + backupName());
+  return true;
+}
+
+function shareFile(file, name, onFail) {
+  navigator.share({ files: [file], title: name }).then(function () {
+    toast("Backup shared — choose Save to Files.");
+  })["catch"](function (e) {
+    if (e && e.name === "AbortError") return;   /* user dismissed the sheet */
+    onFail();
+  });
+}
+
+/* WebKit only accepts a subset of file types in the share sheet, so try the
+   honest type first and fall back to text/plain keeping the .json name. */
+function shareCandidate(text, name) {
+  var types = ["application/json", "text/plain"];
+  for (var i = 0; i < types.length; i++) {
+    var f;
+    try { f = new File([text], name, { type: types[i] }); }
+    catch (e) { return null; }
+    if (canShareFile(f)) return f;
+  }
+  return null;
+}
+
+function doExport() {
+  var text = serialise();
+  var name = backupName();
+
+  /* iOS ignores <a download> for blob URLs, and on the home screen there is no
+     address bar to escape a blob navigation — the share sheet is the only
+     route to Files/iCloud. */
+  if (isIOS() || isStandalone()) {
+    var shareable = shareCandidate(text, name);
+    if (shareable) { shareFile(shareable, name, function () { showBackupText(text, name); }); }
+    else { showBackupText(text, name); }
+    return;
+  }
+
+  if (anchorDownload(text, name)) { toast("Backup saved as " + name); return; }
+
+  var f = shareCandidate(text, name);
+  if (f) { shareFile(f, name, function () { showBackupText(text, name); }); return; }
+
+  showBackupText(text, name);
+}
+
+/* Last resort: put the JSON on screen so it can always be copied out. */
+function showBackupText(text, name) {
+  var old = el("sheet");
+  if (old) old.parentNode.removeChild(old);
+
+  var wrap = document.createElement("div");
+  wrap.className = "sheet";
+  wrap.id = "sheet";
+  wrap.innerHTML =
+    '<div class="sheet-card">' +
+      '<div class="card-head"><span class="label">Backup · ' + esc(name) + "</span>" +
+        '<button class="btn small" data-sheet="close">Close</button></div>' +
+      '<p class="hint" style="margin:0 0 9px">This browser won\u2019t hand over a file. Copy everything below into a ' +
+        "note or a text file and keep it \u2014 Restore reads it straight back.</p>" +
+      '<textarea class="sheet-text" readonly></textarea>' +
+      '<div class="row" style="margin-top:10px">' +
+        '<button class="btn primary grow" data-sheet="copy">Copy to clipboard</button></div>' +
+    "</div>";
+
+  var ta = wrap.querySelector(".sheet-text");
+  ta.value = text;
+
+  wrap.addEventListener("click", function (ev) {
+    var n = ev.target;
+    var what = n.getAttribute && n.getAttribute("data-sheet");
+    if (what === "close" || n === wrap) {
+      wrap.parentNode.removeChild(wrap);
+    } else if (what === "copy") {
+      ta.focus();
+      ta.setSelectionRange(0, ta.value.length);
+      var ok = false;
+      try { ok = document.execCommand("copy"); } catch (e) {}
+      if (ok) { toast("Copied. Paste it somewhere safe."); return; }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(ta.value).then(function () {
+          toast("Copied. Paste it somewhere safe.");
+        })["catch"](function () { toast("Select the text and copy it manually."); });
+      } else {
+        toast("Select the text and copy it manually.");
+      }
+    }
+  });
+
+  document.body.appendChild(wrap);
 }
 
 function applyImported(text, label) {

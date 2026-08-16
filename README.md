@@ -60,10 +60,17 @@ back to system fonts and the layout is unchanged.
 
 ## Backup and restore
 
-- **Backup** downloads `runway-backup-YYYY-MM-DD.json`. On iPad, save it to
-  Files/iCloud — that's your real copy.
+- **Backup** hands you `runway-backup-YYYY-MM-DD.json`. How depends on the
+  browser, because iOS and everything else disagree about downloads:
+  - **iPhone/iPad** — the share sheet opens; choose **Save to Files** (iCloud
+    Drive or On My iPad). iOS Safari ignores `<a download>` for generated
+    files, and a home-screen app has no address bar to escape a blob URL, so
+    the share sheet is the only route that reaches Files.
+  - **Desktop and Android** — a normal download.
+  - **Anything older that supports neither** — the JSON appears on screen with
+    a Copy button, so a backup is always recoverable.
 - **Restore** reads such a file back and replaces everything on the device
-  (it asks first).
+  (it asks first). On iPad, pick the file from Files.
 - **Reset** clears the device back to empty.
 
 Restore accepts older and partial files: missing categories are filled in,
