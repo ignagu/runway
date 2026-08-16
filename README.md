@@ -1,0 +1,102 @@
+# The Runway
+
+A small, offline-first PWA for planning family travel against an annual budget.
+Plain HTML/CSS/JS, no build step, no backend, no tracking. It runs as a static
+site and installs to the iPad home screen.
+
+Three tabs:
+
+- **Dashboard** — annual budget per year, what's allocated vs. free, and whether
+  the year is pacing ahead or behind the calendar.
+- **Calendar** — 2026 Spanish (Madrid) and Swedish holidays, long-weekend runs
+  and single-day bridges (*puentes*), plus your own trips.
+- **Trips** — trips with a six-category budget breakdown and a drill-down.
+
+## Never commit your data
+
+**The repository contains code only.** It ships empty: no budget, no points, no
+trips, no names, no figures.
+
+Your data lives in two places, both of them yours:
+
+1. `localStorage` in the browser on your device (the working copy).
+2. A JSON file you export and keep in Files/iCloud (the durable copy).
+
+Exported backups are personal. **Never commit one.** `.gitignore` already
+excludes `runway-backup-*.json`, `/data/`, and `*.local.json`, and the app never
+writes anything into the repository directory — exports go through the browser's
+download flow. If `git status` ever shows a data file, delete it rather than
+committing it.
+
+## Running it
+
+Any static file server works, from the repo root:
+
+```sh
+python3 -m http.server 8000
+# then open http://localhost:8000/
+```
+
+Opening `index.html` directly via `file://` mostly works, but service workers
+(and therefore offline mode) need `http://` or `https://`.
+
+## Hosting on GitHub Pages
+
+1. Push to a public repo with all files in the root.
+2. **Settings → Pages → Deploy from branch → `main` / `/ (root)`**.
+3. The app is live at `https://<user>.github.io/<repo>/`.
+
+Every path in the app is relative, so the project subpath works without config.
+
+## Installing on iPad
+
+1. Open the Pages URL in Safari.
+2. **Share → Add to Home Screen.**
+3. Launch from the home screen: it opens standalone, without Safari chrome.
+
+After the first load the service worker caches the app, so it works fully
+offline. Google Fonts are the one optional network request; offline they fall
+back to system fonts and the layout is unchanged.
+
+## Backup and restore
+
+- **Backup** downloads `runway-backup-YYYY-MM-DD.json`. On iPad, save it to
+  Files/iCloud — that's your real copy.
+- **Restore** reads such a file back and replaces everything on the device
+  (it asks first).
+- **Reset** clears the device back to empty.
+
+Restore accepts older and partial files: missing categories are filled in,
+numbers are coerced, and unknown statuses/types fall back to defaults.
+
+### Linking a real file (desktop Chromium/Edge only)
+
+Where the File System Access API exists, **Link data file** binds the app to a
+real `.json` on disk and auto-saves to it on every change; **Open data file**
+reloads from it. The file handle is remembered in IndexedDB between sessions.
+
+iPad Safari has no such API, so those two buttons are hidden there and
+Backup/Restore is the local-file workflow.
+
+## Holiday data
+
+2026 only, hard-coded in `index.html`:
+
+- **Spain** — the City of Madrid calendar: national + Comunidad de Madrid +
+  Madrid local days.
+- **Sweden** — *röda dagar* plus the observances people actually take off
+  (Midsommarafton, Julafton, Nyårsafton). The window finder treats those as
+  days off, which is how they work in practice.
+
+Extending to 2027+ means computing the movable feasts (Easter and everything
+hanging off it) and re-checking each national list — don't guess the dates.
+
+## Files
+
+```
+index.html             the whole app (markup + CSS + JS)
+sw.js                  service worker, cache-first offline
+manifest.webmanifest   PWA manifest
+icon-180.png           apple-touch-icon
+icon-512.png           manifest icon
+```

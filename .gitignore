@@ -1,0 +1,10 @@
+# Never commit personal data — exported backups stay on your device.
+runway-backup-*.json
+/data/
+*.local.json
+.DS_Store
+
+# Editor / OS noise
+Thumbs.db
+.vscode/
+.idea/

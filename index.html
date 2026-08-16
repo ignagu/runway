@@ -1,0 +1,1609 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The Runway — Family Travel Budget</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#EEF2F6">
+<meta name="description" content="Offline-first planner for family travel and an annual travel budget.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="The Runway">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ink:#0B1E33; --ink2:#123055; --paper:#EEF2F6; --page:#E6ECF2;
+  --go:#1F9D6B; --amber:#E39A2B; --over:#CE3F34; --line:#D6DEE6;
+  --muted:#5C6C7C; --text:#17222F;
+  --es:#C63F35; --se:#2E6DB4; --trip:#1F9D6B;
+  --spent:#E0A526; --alloc:#1F9D6B; --free:#cdd6e0; --overbar:#E8695E;
+  --display:"Space Grotesk", "Avenir Next", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono:"Space Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --body:"Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --r:14px; --shadow:0 1px 2px rgba(11,30,51,.06), 0 6px 18px rgba(11,30,51,.06);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--page); color:var(--text); font-family:var(--body);
+  font-size:15px; line-height:1.45; -webkit-text-size-adjust:100%;
+  padding-env: 0;
+}
+.app{
+  max-width:560px; margin:0 auto; padding:0 14px 64px;
+  padding-left:calc(14px + env(safe-area-inset-left));
+  padding-right:calc(14px + env(safe-area-inset-right));
+  padding-bottom:calc(64px + env(safe-area-inset-bottom));
+}
+
+/* ---------- header + tabs ---------- */
+.topbar{padding:calc(18px + env(safe-area-inset-top)) 2px 12px}
+.eyebrow{
+  font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--muted);
+}
+.brand{
+  font-family:var(--display); font-weight:700; font-size:30px; line-height:1.1;
+  letter-spacing:-.015em; color:var(--ink); margin:2px 0 0;
+}
+.tabs{
+  display:flex; gap:4px; background:#fff; border:1px solid var(--line);
+  border-radius:12px; padding:4px; box-shadow:var(--shadow); position:sticky; top:8px; z-index:20;
+}
+.tab{
+  flex:1; appearance:none; border:0; background:transparent; border-radius:9px;
+  padding:9px 6px; font-family:var(--body); font-weight:600; font-size:14px;
+  color:var(--muted); cursor:pointer;
+}
+.tab.is-on{background:var(--ink); color:#fff}
+
+/* ---------- generic ---------- */
+.view{padding-top:14px}
+.view[hidden]{display:none}
+.card{
+  background:#fff; border:1px solid var(--line); border-radius:var(--r);
+  box-shadow:var(--shadow); padding:14px; margin-bottom:12px;
+}
+.card-head{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px}
+.label{
+  font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted);
+}
+.hint{font-size:12.5px; color:var(--muted); line-height:1.5}
+.num{font-family:var(--mono); font-variant-numeric:tabular-nums}
+.row{display:flex; gap:8px}
+.grow{flex:1}
+button{font-family:var(--body)}
+.btn{
+  appearance:none; border:1px solid var(--line); background:#fff; color:var(--ink);
+  border-radius:10px; padding:10px 12px; font-size:14px; font-weight:600; cursor:pointer;
+}
+.btn:active{background:var(--paper)}
+.btn.primary{background:var(--ink); border-color:var(--ink); color:#fff}
+.btn.danger{color:var(--over); border-color:#EBC7C3}
+.btn.small{padding:7px 10px; font-size:13px; font-weight:600}
+.btn[disabled]{opacity:.45}
+.stepper{
+  appearance:none; border:1px solid var(--line); background:#fff; color:var(--ink);
+  width:34px; height:34px; border-radius:9px; font-size:17px; line-height:1; cursor:pointer;
+}
+input,select,textarea{
+  font-family:var(--body); font-size:16px; color:var(--text);
+  background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px 11px; width:100%;
+}
+input:focus,select:focus,textarea:focus{outline:2px solid #B9CBE0; outline-offset:1px}
+textarea{resize:vertical; min-height:64px}
+input.num-in{font-family:var(--mono); font-variant-numeric:tabular-nums}
+.field{margin-bottom:10px}
+.field > .label{display:block; margin-bottom:5px}
+.two{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+.seg{display:flex; gap:4px; background:var(--paper); border:1px solid var(--line); border-radius:11px; padding:3px}
+.seg button{
+  flex:1; appearance:none; border:0; background:transparent; border-radius:8px; padding:7px 4px;
+  font-size:13px; font-weight:600; color:var(--muted); cursor:pointer;
+}
+.seg button.is-on{background:#fff; color:var(--ink); box-shadow:0 1px 2px rgba(11,30,51,.12)}
+
+/* ---------- dashboard ---------- */
+.yearsw{display:flex; align-items:center; gap:8px}
+.yearsw .y{font-family:var(--mono); font-weight:700; font-size:15px; color:var(--ink); min-width:46px; text-align:center}
+.budget-in{display:flex; align-items:baseline; gap:8px; margin-top:2px}
+.budget-in .cur{font-family:var(--mono); font-size:22px; color:var(--muted)}
+#budget{
+  border:0; border-bottom:2px solid var(--line); border-radius:0; padding:4px 0;
+  font-family:var(--mono); font-weight:700; font-size:30px; letter-spacing:-.01em; color:var(--ink);
+}
+#budget:focus{outline:0; border-bottom-color:var(--ink)}
+.hero .big{
+  font-family:var(--mono); font-weight:700; font-size:38px; letter-spacing:-.02em;
+  color:var(--ink); line-height:1.05; margin:2px 0 2px;
+}
+.hero .big.is-over{color:var(--over)}
+.bar{display:flex; height:12px; border-radius:99px; overflow:hidden; background:var(--paper); border:1px solid var(--line); margin:12px 0 8px}
+.bar i{display:block; height:100%}
+.legend{display:flex; flex-wrap:wrap; gap:10px 14px}
+.legend span{display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted)}
+.legend b{width:9px; height:9px; border-radius:3px; display:inline-block}
+.legend em{font-style:normal; font-family:var(--mono); color:var(--text)}
+.tiles{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:12px}
+.tile{
+  background:#fff; border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow);
+  padding:11px 10px;
+}
+.tile .label{font-size:9.5px; letter-spacing:.09em}
+.tile .v{font-family:var(--mono); font-weight:700; font-size:17px; color:var(--ink); margin-top:5px; letter-spacing:-.02em}
+.tile .v.is-over{color:var(--over)}
+.nudge{
+  display:flex; gap:9px; align-items:flex-start; background:#fff; border:1px solid var(--line);
+  border-left:3px solid var(--go); border-radius:12px; padding:11px 12px; margin-bottom:12px;
+  box-shadow:var(--shadow); font-size:13.5px; line-height:1.5;
+}
+.nudge .dot{width:8px; height:8px; border-radius:99px; background:var(--go); margin-top:6px; flex:0 0 auto}
+
+/* pacing */
+.pace-wrap{margin-top:4px}
+.pace-track{position:relative; height:16px; background:var(--paper); border:1px solid var(--line); border-radius:99px; overflow:hidden}
+.pace-fill{position:absolute; inset:0 auto 0 0; border-radius:99px}
+.pace-now{position:absolute; top:-4px; bottom:-4px; width:2px; background:var(--ink); border-radius:2px}
+.pace-now:after{
+  content:""; position:absolute; left:50%; top:-4px; width:7px; height:7px; margin-left:-3.5px;
+  background:var(--ink); border-radius:99px;
+}
+.months{display:flex; justify-content:space-between; margin-top:5px}
+.months span{font-family:var(--mono); font-size:9.5px; color:var(--muted); flex:1; text-align:center}
+.verdict{display:flex; gap:8px; align-items:baseline; margin-top:11px}
+.pill{
+  font-family:var(--mono); font-size:10.5px; letter-spacing:.08em; text-transform:uppercase;
+  padding:3px 8px; border-radius:99px; border:1px solid var(--line); color:var(--muted); white-space:nowrap;
+}
+.pill.go{color:var(--go); border-color:#B7E0CD; background:#F0FAF6}
+.pill.amber{color:#A9711A; border-color:#F0DDB8; background:#FDF6E9}
+.pill.over{color:var(--over); border-color:#EBC7C3; background:#FDF0EF}
+.pill.blue{color:var(--se); border-color:#C3D6EA; background:#F0F5FA}
+.stats{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:11px; border-top:1px solid var(--line); padding-top:10px}
+.stats div .label{font-size:9.5px}
+.stats div .v{font-family:var(--mono); font-weight:700; font-size:15px; color:var(--ink); margin-top:3px}
+
+/* points */
+.pts-total{display:flex; align-items:baseline; justify-content:space-between; margin-top:10px; border-top:1px solid var(--line); padding-top:10px}
+.pts-total .v{font-family:var(--mono); font-weight:700; font-size:20px; color:var(--ink)}
+
+/* ---------- calendar ---------- */
+.cal-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px}
+.cal-title{font-family:var(--display); font-weight:700; font-size:19px; color:var(--ink)}
+.dow{display:grid; grid-template-columns:repeat(7,1fr); gap:3px; margin-bottom:4px}
+.dow span{font-family:var(--mono); font-size:10px; color:var(--muted); text-align:center}
+.grid{display:grid; grid-template-columns:repeat(7,1fr); gap:3px}
+.day{
+  position:relative; appearance:none; border:1px solid transparent; background:transparent;
+  border-radius:10px; padding:6px 0 12px; min-height:42px; cursor:pointer;
+  font-family:var(--mono); font-size:13px; color:var(--text); text-align:center;
+}
+.day.out{color:#B3BEC9}
+.day.off{background:var(--paper)}
+.day.today{border-color:var(--ink); font-weight:700}
+.day.sel{background:var(--ink); color:#fff; border-color:var(--ink)}
+.day.sel.out{color:#8FA1B4}
+.dots{position:absolute; left:0; right:0; bottom:5px; display:flex; gap:3px; justify-content:center}
+.dots i{width:5px; height:5px; border-radius:99px; display:block}
+.d-es{background:var(--es)} .d-se{background:var(--se)} .d-tr{background:var(--trip)}
+.daycard{background:var(--paper); border:1px solid var(--line); border-radius:12px; padding:11px 12px; margin-top:11px}
+.daycard h4{margin:0 0 6px; font-family:var(--display); font-size:15px; color:var(--ink)}
+.ev{display:flex; gap:8px; align-items:flex-start; padding:4px 0; font-size:13.5px}
+.ev i{width:7px; height:7px; border-radius:99px; margin-top:6px; flex:0 0 auto}
+.ev small{color:var(--muted); font-family:var(--mono); font-size:10.5px; letter-spacing:.06em; text-transform:uppercase}
+.win{
+  width:100%; text-align:left; appearance:none; background:#fff; border:1px solid var(--line);
+  border-radius:11px; padding:10px 11px; margin-bottom:7px; cursor:pointer; display:block;
+}
+.win:active{background:var(--paper)}
+.win .t{display:flex; justify-content:space-between; gap:10px; align-items:baseline}
+.win .dates{font-family:var(--mono); font-weight:700; font-size:13.5px; color:var(--ink)}
+.win .len{font-family:var(--mono); font-size:11px; color:var(--muted); white-space:nowrap}
+.win .why{font-size:12.5px; color:var(--muted); margin-top:3px}
+.win.bridge{border-style:dashed}
+.empty{font-size:13px; color:var(--muted); padding:6px 0}
+
+/* ---------- trips ---------- */
+.trip{
+  background:#fff; border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow);
+  margin-bottom:9px; overflow:hidden;
+}
+.trip-top{display:block; width:100%; text-align:left; appearance:none; background:transparent; border:0; padding:12px; cursor:pointer}
+.trip-top:active{background:var(--paper)}
+.trip-name{display:block; font-family:var(--display); font-weight:700; font-size:16.5px; color:var(--ink); letter-spacing:-.01em}
+.trip-meta{display:block; font-size:12.5px; color:var(--muted); margin-top:2px}
+.trip-tot{font-family:var(--mono); font-weight:700; font-size:16px; color:var(--ink); white-space:nowrap}
+.trip-bar{display:flex; height:5px; border-radius:99px; overflow:hidden; background:var(--paper); margin-top:9px}
+.trip-bar i{display:block; height:100%}
+.tag{
+  font-family:var(--mono); font-size:9.5px; letter-spacing:.08em; text-transform:uppercase;
+  border:1px solid var(--line); border-radius:99px; padding:2px 7px; color:var(--muted);
+}
+.tag.s-Idea{color:var(--muted)}
+.tag.s-Planned{color:var(--se); border-color:#C3D6EA}
+.tag.s-Booked{color:var(--go); border-color:#B7E0CD}
+.tag.s-Done{color:#8A94A0; background:var(--paper)}
+.trip-body{border-top:1px solid var(--line); padding:12px; background:#FCFDFE}
+.brk{display:flex; align-items:center; gap:9px; padding:4px 0; font-size:13px}
+.brk .k{width:74px; color:var(--muted); flex:0 0 auto}
+.brk .t{flex:1; height:7px; background:var(--paper); border-radius:99px; overflow:hidden}
+.brk .t i{display:block; height:100%; border-radius:99px}
+.brk .v{font-family:var(--mono); font-size:12.5px; width:74px; text-align:right; flex:0 0 auto}
+.brk .p{font-family:var(--mono); font-size:11px; color:var(--muted); width:34px; text-align:right; flex:0 0 auto}
+.notes{margin-top:9px; padding-top:9px; border-top:1px solid var(--line); font-size:13.5px; white-space:pre-wrap}
+.cats{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+.cat-in{display:flex; align-items:center; gap:7px; border:1px solid var(--line); border-radius:10px; padding:6px 9px}
+.cat-in i{width:8px; height:8px; border-radius:3px; flex:0 0 auto}
+.cat-in label{font-size:12px; color:var(--muted); flex:1}
+.cat-in input{border:0; padding:0; text-align:right; width:74px; font-family:var(--mono); background:transparent}
+.cat-in input:focus{outline:0}
+.form-total{
+  display:flex; justify-content:space-between; align-items:baseline; margin-top:11px;
+  border-top:1px solid var(--line); padding-top:10px;
+}
+.form-total .v{font-family:var(--mono); font-weight:700; font-size:21px; color:var(--ink)}
+
+/* ---------- misc ---------- */
+.warn{background:#FDF6E9; border-color:#F0DDB8}
+#toast{
+  position:fixed; left:50%; bottom:calc(18px + env(safe-area-inset-bottom)); transform:translateX(-50%) translateY(14px);
+  background:var(--ink); color:#fff; padding:10px 15px; border-radius:11px; font-size:13.5px;
+  box-shadow:0 8px 24px rgba(11,30,51,.28); opacity:0; pointer-events:none; transition:.18s; z-index:50;
+  max-width:88vw; text-align:center;
+}
+#toast.on{opacity:1; transform:translateX(-50%) translateY(0)}
+.foot{text-align:center; color:var(--muted); font-size:11.5px; padding:6px 0 0}
+.sr{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
+@media (max-width:360px){
+  .tiles{grid-template-columns:1fr 1fr}
+  .tiles .tile:last-child{grid-column:1 / -1}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="eyebrow">Family travel · budget</div>
+    <h1 class="brand">The Runway</h1>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button class="tab is-on" role="tab" aria-selected="true" data-tab="dash">Dashboard</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="cal">Calendar</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="trips">Trips</button>
+  </nav>
+
+  <main>
+    <section class="view" id="view-dash" role="tabpanel"></section>
+    <section class="view" id="view-cal" role="tabpanel" hidden></section>
+    <section class="view" id="view-trips" role="tabpanel" hidden></section>
+  </main>
+
+  <p class="foot">Your data stays on this device. Back it up to a file.</p>
+</div>
+
+<input type="file" id="importer" accept="application/json,.json" class="sr" aria-hidden="true">
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+"use strict";
+
+/* =========================================================================
+   Constants
+   ========================================================================= */
+
+var STORE_KEY = "runway-tracker-v1";
+var PLANNING_YEAR = 2026;
+
+var CURRENCIES = { EUR: "€", USD: "$", GBP: "£" };
+var DEFAULT_CURRENCY = "EUR";
+
+var CATS = [
+  { k: "flights",    label: "Flights",    c: "#2E6DB4" },
+  { k: "lodging",    label: "Lodging",    c: "#1F9D6B" },
+  { k: "food",       label: "Food",       c: "#E0A526" },
+  { k: "transport",  label: "Transport",  c: "#7B61C9" },
+  { k: "activities", label: "Activities", c: "#E07A5F" },
+  { k: "other",      label: "Other",      c: "#8A94A0" }
+];
+
+var TYPES = ["Weekend", "Big trip", "Other"];
+var STATUSES = ["Idea", "Planned", "Booked", "Done"];
+
+var MONTHS = ["January","February","March","April","May","June",
+              "July","August","September","October","November","December"];
+var MON_SHORT = ["J","F","M","A","M","J","J","A","S","O","N","D"];
+var DOW = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+
+/* Baked-in 2026 holiday calendar. k: national | regional | local | observance */
+var HOLIDAYS = [
+  /* Spain — City of Madrid (national + Comunidad de Madrid + Madrid local) */
+  { d: "2026-01-01", c: "ES", n: "Año Nuevo", k: "national" },
+  { d: "2026-01-06", c: "ES", n: "Reyes / Epiphany", k: "national" },
+  { d: "2026-04-02", c: "ES", n: "Jueves Santo", k: "regional" },
+  { d: "2026-04-03", c: "ES", n: "Viernes Santo", k: "national" },
+  { d: "2026-05-01", c: "ES", n: "Fiesta del Trabajo", k: "national" },
+  { d: "2026-05-02", c: "ES", n: "Día de la Comunidad de Madrid", k: "regional" },
+  { d: "2026-05-15", c: "ES", n: "San Isidro", k: "local" },
+  { d: "2026-08-15", c: "ES", n: "Asunción", k: "national" },
+  { d: "2026-10-12", c: "ES", n: "Fiesta Nacional / Hispanidad", k: "national" },
+  { d: "2026-11-02", c: "ES", n: "Todos los Santos, observed", k: "national" },
+  { d: "2026-11-09", c: "ES", n: "La Almudena", k: "local" },
+  { d: "2026-12-07", c: "ES", n: "Constitución, observed", k: "national" },
+  { d: "2026-12-08", c: "ES", n: "Inmaculada", k: "national" },
+  { d: "2026-12-25", c: "ES", n: "Navidad", k: "national" },
+  /* Sweden — röda dagar + key observances */
+  { d: "2026-01-01", c: "SE", n: "Nyårsdagen", k: "national" },
+  { d: "2026-01-06", c: "SE", n: "Trettondedag jul", k: "national" },
+  { d: "2026-04-03", c: "SE", n: "Långfredagen", k: "national" },
+  { d: "2026-04-05", c: "SE", n: "Påskdagen", k: "national" },
+  { d: "2026-04-06", c: "SE", n: "Annandag påsk", k: "national" },
+  { d: "2026-05-01", c: "SE", n: "Första maj", k: "national" },
+  { d: "2026-05-14", c: "SE", n: "Kristi himmelsfärd", k: "national" },
+  { d: "2026-05-24", c: "SE", n: "Pingstdagen", k: "national" },
+  { d: "2026-06-06", c: "SE", n: "Sveriges nationaldag", k: "national" },
+  { d: "2026-06-19", c: "SE", n: "Midsommarafton", k: "observance" },
+  { d: "2026-06-20", c: "SE", n: "Midsommardagen", k: "national" },
+  { d: "2026-10-31", c: "SE", n: "Alla helgons dag", k: "national" },
+  { d: "2026-12-24", c: "SE", n: "Julafton", k: "observance" },
+  { d: "2026-12-25", c: "SE", n: "Juldagen", k: "national" },
+  { d: "2026-12-26", c: "SE", n: "Annandag jul", k: "national" },
+  { d: "2026-12-31", c: "SE", n: "Nyårsafton", k: "observance" }
+];
+
+var HOL_BY_DAY = {};
+(function () {
+  for (var i = 0; i < HOLIDAYS.length; i++) {
+    var h = HOLIDAYS[i];
+    if (!HOL_BY_DAY[h.d]) HOL_BY_DAY[h.d] = [];
+    HOL_BY_DAY[h.d].push(h);
+  }
+})();
+
+/* =========================================================================
+   Tiny helpers
+   ========================================================================= */
+
+function $(sel, root) { return (root || document).querySelector(sel); }
+function el(id) { return document.getElementById(id); }
+
+function esc(s) {
+  return String(s == null ? "" : s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+function num(v) {
+  var n = typeof v === "number" ? v : parseFloat(String(v == null ? "" : v).replace(",", "."));
+  return isFinite(n) ? n : 0;
+}
+
+function clamp(n, lo, hi) { return n < lo ? lo : (n > hi ? hi : n); }
+
+function pad2(n) { return (n < 10 ? "0" : "") + n; }
+
+function iso(dt) { return dt.getFullYear() + "-" + pad2(dt.getMonth() + 1) + "-" + pad2(dt.getDate()); }
+
+/* Parse "YYYY-MM-DD" as a *local* date (avoids UTC shifting the day). */
+function parseISO(s) {
+  if (!s || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
+  var p = s.split("-");
+  var d = new Date(+p[0], +p[1] - 1, +p[2]);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function addDays(dt, n) { return new Date(dt.getFullYear(), dt.getMonth(), dt.getDate() + n); }
+
+/* Monday = 0 ... Sunday = 6 */
+function dowMon(dt) { return (dt.getDay() + 6) % 7; }
+
+function todayISO() { return iso(new Date()); }
+
+function money(n) {
+  var sym = CURRENCIES[state.currency] || CURRENCIES[DEFAULT_CURRENCY];
+  var raw = num(n);
+  var neg = raw < 0;
+  var v = Math.round(Math.abs(raw));   /* round the magnitude so ±x.5 agree */
+  var s = String(v).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  return (neg ? "\u2212" : "") + sym + s;
+}
+
+function intFmt(n) {
+  return String(Math.round(num(n))).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+}
+
+function pct(n) { return Math.round(n * 100) + "%"; }
+
+function fmtDay(dt) {
+  return DOW[dowMon(dt)] + " " + dt.getDate() + " " + MONTHS[dt.getMonth()].slice(0, 3);
+}
+
+function fmtRange(a, b) {
+  var da = parseISO(a), db = parseISO(b);
+  if (!da && !db) return "No dates";
+  if (da && !db) return fmtDay(da);
+  if (!da && db) return "→ " + fmtDay(db);
+  if (a === b) return fmtDay(da);
+  return fmtDay(da) + " – " + fmtDay(db);
+}
+
+var toastTimer = null;
+function toast(msg) {
+  var t = el("toast");
+  t.textContent = msg;
+  t.classList.add("on");
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(function () { t.classList.remove("on"); }, 2600);
+}
+
+function uid() {
+  return "t" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+/* =========================================================================
+   State + persistence
+   ========================================================================= */
+
+function emptyBreakdown() {
+  var b = {};
+  for (var i = 0; i < CATS.length; i++) b[CATS[i].k] = 0;
+  return b;
+}
+
+function defaultState() {
+  return {
+    budgetByYear: {},
+    currency: DEFAULT_CURRENCY,
+    points: { avios: 0, revolut: 0 },
+    trips: []
+  };
+}
+
+var state = defaultState();
+
+var ui = {
+  tab: "dash",
+  year: new Date().getFullYear(),
+  calYear: PLANNING_YEAR,
+  calMonth: 0,
+  selDay: "",
+  lens: "both",           /* both | ES | SE */
+  editingId: null,        /* trip id being edited, or null */
+  formOpen: false,
+  openTrip: null,         /* expanded trip id */
+  storageOK: true
+};
+
+/* Accepts older/partial shapes and normalises everything. */
+function migrate(raw) {
+  var s = defaultState();
+  if (!raw || typeof raw !== "object") return s;
+
+  /* budget: object per year, or a bare number from an early shape */
+  if (raw.budgetByYear && typeof raw.budgetByYear === "object") {
+    for (var y in raw.budgetByYear) {
+      if (!Object.prototype.hasOwnProperty.call(raw.budgetByYear, y)) continue;
+      if (/^\d{4}$/.test(String(y))) s.budgetByYear[String(y)] = num(raw.budgetByYear[y]);
+    }
+  } else if (raw.budget != null) {
+    s.budgetByYear[String(raw.year || PLANNING_YEAR)] = num(raw.budget);
+  }
+
+  if (raw.currency && CURRENCIES[raw.currency]) s.currency = raw.currency;
+
+  if (raw.points && typeof raw.points === "object") {
+    s.points.avios = num(raw.points.avios);
+    s.points.revolut = num(raw.points.revolut);
+  }
+
+  var trips = raw.trips;
+  if (!trips || Object.prototype.toString.call(trips) !== "[object Array]") trips = [];
+  for (var i = 0; i < trips.length; i++) {
+    var t = trips[i] || {};
+    var b = emptyBreakdown();
+    var src = (t.breakdown && typeof t.breakdown === "object") ? t.breakdown : {};
+    var seen = false;
+    for (var c = 0; c < CATS.length; c++) {
+      var k = CATS[c].k;
+      if (src[k] != null) seen = true;
+      b[k] = num(src[k]);
+    }
+    /* a legacy flat cost lands in "other" so nothing is lost */
+    if (!seen && t.cost != null) b.other = num(t.cost);
+
+    s.trips.push({
+      id: t.id ? String(t.id) : uid(),
+      name: String(t.name == null ? "" : t.name),
+      place: String(t.place == null ? "" : t.place),
+      start: /^\d{4}-\d{2}-\d{2}$/.test(t.start || "") ? t.start : "",
+      end: /^\d{4}-\d{2}-\d{2}$/.test(t.end || "") ? t.end : "",
+      type: TYPES.indexOf(t.type) >= 0 ? t.type : TYPES[0],
+      status: STATUSES.indexOf(t.status) >= 0 ? t.status : STATUSES[0],
+      notes: String(t.notes == null ? "" : t.notes),
+      breakdown: b
+    });
+  }
+  return s;
+}
+
+function load() {
+  var raw = null;
+  try {
+    raw = window.localStorage.getItem(STORE_KEY);
+  } catch (e) {
+    ui.storageOK = false;
+  }
+  if (raw) {
+    try { state = migrate(JSON.parse(raw)); }
+    catch (e2) { state = defaultState(); }
+  } else {
+    state = defaultState();
+  }
+}
+
+function save() {
+  try {
+    window.localStorage.setItem(STORE_KEY, JSON.stringify(state));
+    ui.storageOK = true;
+  } catch (e) {
+    ui.storageOK = false;
+  }
+  fileSync();  /* optional File System Access mirror */
+}
+
+/* =========================================================================
+   Derived values
+   ========================================================================= */
+
+function tripTotal(t) {
+  var s = 0;
+  for (var i = 0; i < CATS.length; i++) s += num(t.breakdown[CATS[i].k]);
+  return s;
+}
+
+function tripYear(t) {
+  var d = parseISO(t.start);
+  return d ? d.getFullYear() : PLANNING_YEAR;
+}
+
+function tripsForYear(y) {
+  var out = [];
+  for (var i = 0; i < state.trips.length; i++) {
+    if (tripYear(state.trips[i]) === y) out.push(state.trips[i]);
+  }
+  return out;
+}
+
+function budgetFor(y) { return num(state.budgetByYear[String(y)]); }
+
+function yearStats(y) {
+  var trips = tripsForYear(y);
+  var spent = 0, upcoming = 0;
+  for (var i = 0; i < trips.length; i++) {
+    var tot = tripTotal(trips[i]);
+    if (trips[i].status === "Done") spent += tot; else upcoming += tot;
+  }
+  var budget = budgetFor(y);
+  var allocatedAll = spent + upcoming;
+  return {
+    year: y,
+    budget: budget,
+    trips: trips,
+    spent: spent,
+    upcoming: upcoming,          /* allocated, status !== Done */
+    allocatedAll: allocatedAll,
+    free: budget - allocatedAll, /* unallocated; negative when over */
+    left: budget - spent,        /* left this year */
+    over: Math.max(0, allocatedAll - budget)
+  };
+}
+
+/* Fraction of the year elapsed right now, live from the real clock. */
+function yearElapsed(y) {
+  var now = new Date();
+  var cy = now.getFullYear();
+  if (y > cy) return 0;
+  if (y < cy) return 1;
+  var start = new Date(y, 0, 1).getTime();
+  var end = new Date(y + 1, 0, 1).getTime();
+  return clamp((now.getTime() - start) / (end - start), 0, 1);
+}
+
+function pacing(y) {
+  var st = yearStats(y);
+  var elapsed = yearElapsed(y);
+  var now = new Date();
+  var phase = y > now.getFullYear() ? "future" : (y < now.getFullYear() ? "past" : "current");
+  var committed = st.budget > 0 ? st.allocatedAll / st.budget : 0;
+  var monthsLeft = 12 * (1 - elapsed);
+
+  var verdict, tone, line;
+  if (st.budget <= 0) {
+    verdict = "no budget"; tone = "";
+    line = "Set a budget for " + y + " to see how the year is pacing.";
+  } else if (committed > 1) {
+    verdict = "over"; tone = "over";
+    line = "Committed " + pct(committed) + " of the budget — " + money(st.over) + " past the line.";
+  } else if (phase === "past") {
+    verdict = "wrapped"; tone = "";
+    line = y + " is wrapped: " + pct(committed) + " of the budget committed.";
+  } else if (phase === "future") {
+    verdict = "not started"; tone = "blue";
+    line = y + " hasn't started — " + money(st.free) + " free to plan across the whole year.";
+  } else if (committed < elapsed - 0.1) {
+    verdict = "behind"; tone = "blue";
+    line = "Under-committed for the date: " + pct(committed) + " planned vs " + pct(elapsed) + " of the year gone.";
+  } else if (committed > elapsed + 0.1) {
+    verdict = "ahead"; tone = "amber";
+    line = "Running ahead: " + pct(committed) + " committed against " + pct(elapsed) + " of the year.";
+  } else {
+    verdict = "on pace"; tone = "go";
+    line = "On pace — " + pct(committed) + " committed, " + pct(elapsed) + " of the year gone.";
+  }
+
+  var perMonth = null;
+  if (st.budget > 0 && phase !== "past") {
+    perMonth = monthsLeft > 0.25 ? st.free / monthsLeft : st.free;
+  }
+
+  return {
+    st: st, elapsed: elapsed, committed: committed, phase: phase,
+    verdict: verdict, tone: tone, line: line,
+    monthsLeft: monthsLeft, perMonth: perMonth
+  };
+}
+
+var TONE_COLOR = { go: "var(--go)", amber: "var(--amber)", over: "var(--over)", blue: "#2E6DB4", "": "#9AA8B6" };
+
+/* =========================================================================
+   Dashboard
+   ========================================================================= */
+
+function allocationBar(st) {
+  /* Peel the overspend off the end (upcoming first, then spent) so the bar
+     always sums to max(budget, allocated). */
+  var over = st.over;
+  var overFromUpcoming = Math.min(over, st.upcoming);
+  var overFromSpent = over - overFromUpcoming;
+  var segs = [
+    { v: st.spent - overFromSpent, c: "var(--spent)" },
+    { v: st.upcoming - overFromUpcoming, c: "var(--alloc)" },
+    { v: Math.max(0, st.free), c: "var(--free)" },
+    { v: over, c: "var(--overbar)" }
+  ];
+  var denom = Math.max(st.budget, st.allocatedAll);
+  var html = "";
+  if (denom > 0) {
+    for (var i = 0; i < segs.length; i++) {
+      if (segs[i].v <= 0) continue;
+      html += '<i style="width:' + (segs[i].v / denom * 100) + '%;background:' + segs[i].c + '"></i>';
+    }
+  }
+  return '<div class="bar">' + html + "</div>";
+}
+
+function nudgeFor(st) {
+  var msg, color;
+  if (st.budget <= 0) {
+    color = "var(--muted)";
+    msg = "Set an annual budget above, then add trips — this line will tell you whether you're using the runway or overshooting it.";
+  } else if (st.free < 0) {
+    color = "var(--over)";
+    msg = "Over by " + money(-st.free) + ". Trim a trip, move one to next year, or raise the budget.";
+  } else if (st.free > st.budget * 0.4) {
+    color = "#2E6DB4";
+    msg = money(st.free) + " still unallocated — that's a lot of runway. Plan something rather than let it go unused.";
+  } else if (st.free > st.budget * 0.05) {
+    color = "var(--go)";
+    msg = "Nicely balanced: " + money(st.free) + " free on top of " + money(st.allocatedAll) + " planned.";
+  } else {
+    color = "var(--amber)";
+    msg = "Fully allocated — " + money(st.free) + " left. The year is spoken for; anything new means trading something out.";
+  }
+  return '<div class="nudge" style="border-left-color:' + color + '">' +
+         '<span class="dot" style="background:' + color + '"></span><span>' + esc(msg) + "</span></div>";
+}
+
+function pacePanel(y) {
+  var p = pacing(y);
+  var color = TONE_COLOR[p.tone];
+  var fill = clamp(p.committed, 0, 1) * 100;
+
+  var months = "";
+  for (var i = 0; i < 12; i++) months += "<span>" + MON_SHORT[i] + "</span>";
+
+  var marker = p.phase === "current"
+    ? '<span class="pace-now" style="left:' + (p.elapsed * 100) + '%" title="today"></span>' : "";
+
+  var perMonth = p.perMonth == null ? "—"
+    : (p.st.free < 0 ? money(0) : money(p.perMonth));
+
+  return '<div class="card">' +
+    '<div class="card-head"><span class="label">Pacing the year</span>' +
+      '<span class="pill ' + p.tone + '">' + esc(p.verdict) + "</span></div>" +
+    '<div class="pace-wrap">' +
+      '<div class="pace-track">' +
+        '<span class="pace-fill" style="width:' + fill + '%;background:' + color + '"></span>' + marker +
+      "</div>" +
+      '<div class="months">' + months + "</div>" +
+    "</div>" +
+    '<div class="verdict"><span class="hint">' + esc(p.line) + "</span></div>" +
+    '<div class="stats">' +
+      '<div><span class="label">Committed</span><div class="v">' + (p.st.budget > 0 ? pct(p.committed) : "—") + "</div></div>" +
+      '<div><span class="label">Year gone</span><div class="v">' + pct(p.elapsed) + "</div></div>" +
+      '<div><span class="label">Free / month</span><div class="v">' + perMonth + "</div></div>" +
+    "</div>" +
+  "</div>";
+}
+
+function renderDash() {
+  var y = ui.year;
+  var st = yearStats(y);
+  var sym = CURRENCIES[state.currency] || CURRENCIES[DEFAULT_CURRENCY];
+  var budgetVal = state.budgetByYear[String(y)] == null ? "" : String(state.budgetByYear[String(y)]);
+  var pts = num(state.points.avios) + num(state.points.revolut);
+
+  var h = "";
+
+  if (!ui.storageOK) {
+    h += '<div class="card warn"><span class="label">Heads up</span>' +
+         '<p class="hint" style="margin:6px 0 0">This browser is blocking local storage, so changes won\'t survive a reload. ' +
+         "Use Backup below to keep a copy of your data.</p></div>";
+  }
+
+  /* budget + year switcher */
+  h += '<div class="card">' +
+    '<div class="card-head"><span class="label">Travel budget · per year</span>' +
+      '<span class="yearsw">' +
+        '<button class="stepper" data-act="year" data-v="-1" aria-label="Previous year">‹</button>' +
+        '<span class="y num">' + y + "</span>" +
+        '<button class="stepper" data-act="year" data-v="1" aria-label="Next year">›</button>' +
+      "</span></div>" +
+    '<div class="budget-in"><span class="cur">' + sym + "</span>" +
+      '<input id="budget" class="num-in" type="text" inputmode="decimal" placeholder="0" ' +
+        'value="' + esc(budgetVal) + '" aria-label="Annual travel budget for ' + y + '"></div>' +
+    '<p class="hint" style="margin:8px 0 0">Stored per year. Trips count towards the year of their start date.</p>' +
+  "</div>";
+
+  /* hero */
+  h += '<div class="card hero">' +
+    '<span class="label">Unallocated · free to plan</span>' +
+    '<div class="big' + (st.free < 0 ? " is-over" : "") + '">' + money(st.free) + "</div>" +
+    '<span class="hint">' + money(st.budget) + " budget · " + money(st.allocatedAll) + " committed across " +
+      st.trips.length + (st.trips.length === 1 ? " trip" : " trips") + "</span>" +
+    allocationBar(st) +
+    '<div class="legend">' +
+      '<span><b style="background:var(--spent)"></b>Spent <em>' + money(st.spent) + "</em></span>" +
+      '<span><b style="background:var(--alloc)"></b>Allocated <em>' + money(st.upcoming) + "</em></span>" +
+      '<span><b style="background:var(--free)"></b>Free <em>' + money(Math.max(0, st.free)) + "</em></span>" +
+      (st.over > 0 ? '<span><b style="background:var(--overbar)"></b>Over <em>' + money(st.over) + "</em></span>" : "") +
+    "</div></div>";
+
+  /* tiles */
+  h += '<div class="tiles">' +
+    '<div class="tile"><span class="label">Allocated<br>(upcoming)</span><div class="v">' + money(st.upcoming) + "</div></div>" +
+    '<div class="tile"><span class="label">Unallocated<br>(free)</span><div class="v' + (st.free < 0 ? " is-over" : "") + '">' + money(st.free) + "</div></div>" +
+    '<div class="tile"><span class="label">Left<br>this year</span><div class="v' + (st.left < 0 ? " is-over" : "") + '">' + money(st.left) + "</div></div>" +
+  "</div>";
+
+  h += nudgeFor(st);
+  h += pacePanel(y);
+
+  /* points */
+  h += '<div class="card">' +
+    '<div class="card-head"><span class="label">Points · kept out of the cash budget</span></div>' +
+    '<div class="two">' +
+      '<div class="field"><span class="label">Iberia Avios</span>' +
+        '<input class="num-in" type="text" inputmode="numeric" data-pts="avios" placeholder="0" value="' +
+          esc(state.points.avios ? String(state.points.avios) : "") + '"></div>' +
+      '<div class="field"><span class="label">Revolut</span>' +
+        '<input class="num-in" type="text" inputmode="numeric" data-pts="revolut" placeholder="0" value="' +
+          esc(state.points.revolut ? String(state.points.revolut) : "") + '"></div>' +
+    "</div>" +
+    '<div class="pts-total"><span class="label">Combined</span><span class="v">' + intFmt(pts) + " pts</span></div>" +
+    '<p class="hint" style="margin:8px 0 0">Points sit outside the cash budget on purpose. They stretch furthest on one ' +
+      "high-value long-haul redemption rather than being sprinkled over short hops.</p>" +
+  "</div>";
+
+  /* data */
+  h += '<div class="card">' +
+    '<div class="card-head"><span class="label">Your data</span></div>' +
+    '<p class="hint" style="margin:0 0 10px">Everything lives on this device. Back up to a JSON file you keep in Files or iCloud — ' +
+      "that file is your durable copy.</p>" +
+    '<div class="row" style="flex-wrap:wrap">' +
+      '<button class="btn grow" data-act="export">Backup</button>' +
+      '<button class="btn grow" data-act="import">Restore</button>' +
+      '<button class="btn danger" data-act="reset">Reset</button>' +
+    "</div>" +
+    (hasFSA()
+      ? '<div class="row" style="margin-top:8px">' +
+          '<button class="btn grow" data-act="link-file">' + (fsState.name ? "Re-link data file" : "Link data file") + "</button>" +
+          '<button class="btn grow" data-act="open-file">Open data file</button>' +
+        "</div>" +
+        '<p class="hint" id="fs-status" style="margin:8px 0 0">' +
+          (fsState.name ? "Auto-saving to " + esc(fsState.name) : "Optional: bind to a real .json file on this computer and auto-save to it.") +
+        "</p>"
+      : "") +
+  "</div>";
+
+  el("view-dash").innerHTML = h;
+}
+
+/* =========================================================================
+   Calendar
+   ========================================================================= */
+
+function holsOn(dISO, country) {
+  var all = HOL_BY_DAY[dISO] || [];
+  if (!country) return all;
+  var out = [];
+  for (var i = 0; i < all.length; i++) if (all[i].c === country) out.push(all[i]);
+  return out;
+}
+
+function isWeekend(dt) { return dowMon(dt) >= 5; }
+
+/* A day off = weekend, or any holiday in that country's calendar
+   (Swedish observances like Julafton are treated as days off, which is how
+   they work in practice). */
+function isOff(dt, country) {
+  if (isWeekend(dt)) return true;
+  return holsOn(iso(dt), country).length > 0;
+}
+
+function offForLens(dt, lens) {
+  if (lens === "both") return isOff(dt, "ES") && isOff(dt, "SE");
+  return isOff(dt, lens);
+}
+
+function tripsCovering(dISO) {
+  var out = [];
+  for (var i = 0; i < state.trips.length; i++) {
+    var t = state.trips[i];
+    if (!t.start && !t.end) continue;
+    var a = t.start || t.end, b = t.end || t.start;
+    if (b < a) { var tmp = a; a = b; b = tmp; }
+    if (dISO >= a && dISO <= b) out.push(t);
+  }
+  return out;
+}
+
+function holNames(fromISO, toISO, lens) {
+  var names = [], seen = {};
+  var d = parseISO(fromISO), stop = parseISO(toISO);
+  while (d && stop && iso(d) <= iso(stop)) {
+    var hs = HOL_BY_DAY[iso(d)] || [];
+    for (var i = 0; i < hs.length; i++) {
+      if (lens !== "both" && hs[i].c !== lens) continue;
+      var key = hs[i].n;
+      if (!seen[key]) { seen[key] = 1; names.push(hs[i].n); }
+    }
+    d = addDays(d, 1);
+  }
+  return names;
+}
+
+/* Long-weekend windows for the given year and lens. */
+function windows(year, lens) {
+  var days = [];              /* [{dt, iso, off}] for the whole year */
+  var d = new Date(year, 0, 1);
+  while (d.getFullYear() === year) {
+    days.push({ dt: d, iso: iso(d), off: offForLens(d, lens) });
+    d = addDays(d, 1);
+  }
+
+  var out = [], i, j;
+
+  /* natural runs of >= 3 days off */
+  i = 0;
+  while (i < days.length) {
+    if (!days[i].off) { i++; continue; }
+    j = i;
+    while (j + 1 < days.length && days[j + 1].off) j++;
+    var len = j - i + 1;
+    if (len >= 3) {
+      var why = holNames(days[i].iso, days[j].iso, lens);
+      out.push({
+        kind: lens === "both" ? "shared" : "run",
+        start: days[i].iso, end: days[j].iso, len: len,
+        why: why.length ? why.join(" · ") : "Weekend run"
+      });
+    }
+    i = j + 1;
+  }
+
+  /* single-day bridges (puentes) — only meaningful for one country */
+  if (lens !== "both") {
+    for (i = 1; i < days.length - 1; i++) {
+      if (days[i].off) continue;
+      var before = 0, after = 0;
+      for (j = i - 1; j >= 0 && days[j].off; j--) before++;
+      for (j = i + 1; j < days.length && days[j].off; j++) after++;
+      if (before < 1 || after < 1) continue;
+      var total = before + 1 + after;
+      if (total < 4) continue;
+      var s = days[i - before].iso, e = days[i + after].iso;
+      var names = holNames(s, e, lens);
+      out.push({
+        kind: "bridge", start: s, end: e, len: total, take: days[i].iso,
+        why: "Take " + fmtDay(days[i].dt) + " off" + (names.length ? " · " + names.join(" · ") : "")
+      });
+    }
+  }
+
+  out.sort(function (a, b) {
+    if (a.start === b.start) return b.len - a.len;
+    return a.start < b.start ? -1 : 1;
+  });
+  return out;
+}
+
+function renderCal() {
+  var y = ui.calYear, m = ui.calMonth, lens = ui.lens;
+  var today = todayISO();
+
+  var first = new Date(y, m, 1);
+  var gridStart = addDays(first, -dowMon(first));
+
+  var h = "";
+
+  h += '<div class="card">' +
+    '<div class="cal-head">' +
+      '<button class="stepper" data-act="month" data-v="-1" aria-label="Previous month">‹</button>' +
+      '<span class="cal-title">' + MONTHS[m] + " " + y + "</span>" +
+      '<button class="stepper" data-act="month" data-v="1" aria-label="Next month">›</button>' +
+    "</div>" +
+    '<div class="seg" style="margin-bottom:11px">' +
+      '<button data-act="lens" data-v="both"' + (lens === "both" ? ' class="is-on"' : "") + ">Both</button>" +
+      '<button data-act="lens" data-v="ES"' + (lens === "ES" ? ' class="is-on"' : "") + ">Spain</button>" +
+      '<button data-act="lens" data-v="SE"' + (lens === "SE" ? ' class="is-on"' : "") + ">Sweden</button>" +
+    "</div>";
+
+  h += '<div class="dow">';
+  for (var i = 0; i < 7; i++) h += "<span>" + DOW[i].charAt(0) + "</span>";
+  h += "</div>";
+
+  h += '<div class="grid">';
+  for (var c = 0; c < 42; c++) {
+    var dt = addDays(gridStart, c);
+    var di = iso(dt);
+    var cls = "day";
+    if (dt.getMonth() !== m) cls += " out";
+    if (offForLens(dt, lens)) cls += " off";
+    if (di === today) cls += " today";
+    if (di === ui.selDay) cls += " sel";
+
+    var dots = "";
+    if ((lens === "both" || lens === "ES") && holsOn(di, "ES").length) dots += '<i class="d-es"></i>';
+    if ((lens === "both" || lens === "SE") && holsOn(di, "SE").length) dots += '<i class="d-se"></i>';
+    if (tripsCovering(di).length) dots += '<i class="d-tr"></i>';
+
+    h += '<button class="' + cls + '" data-act="day" data-v="' + di + '">' + dt.getDate() +
+         (dots ? '<span class="dots">' + dots + "</span>" : "") + "</button>";
+  }
+  h += "</div>";
+
+  /* selected day detail */
+  if (ui.selDay) {
+    var sd = parseISO(ui.selDay);
+    var hs = HOL_BY_DAY[ui.selDay] || [];
+    var tps = tripsCovering(ui.selDay);
+    var body = "";
+    for (var k = 0; k < hs.length; k++) {
+      if (lens !== "both" && hs[k].c !== lens) continue;
+      body += '<div class="ev"><i class="' + (hs[k].c === "ES" ? "d-es" : "d-se") + '"></i><span>' +
+        esc(hs[k].n) + "<br><small>" + (hs[k].c === "ES" ? "Spain" : "Sweden") + " · " + esc(hs[k].k) + "</small></span></div>";
+    }
+    for (var t2 = 0; t2 < tps.length; t2++) {
+      body += '<div class="ev"><i class="d-tr"></i><span>' + esc(tps[t2].name || "Untitled trip") +
+        "<br><small>" + esc(fmtRange(tps[t2].start, tps[t2].end)) + " · " + esc(tps[t2].status) + "</small></span></div>";
+    }
+    if (!body) body = '<p class="empty">Nothing on this day.</p>';
+    h += '<div class="daycard"><h4>' + esc(fmtDay(sd)) + " " + sd.getFullYear() + "</h4>" + body + "</div>";
+  }
+
+  h += "</div>";  /* end calendar card */
+
+  /* windows */
+  var wins = windows(y, lens);
+  var title = lens === "both" ? "Days off in both countries" : "Long weekends · " + (lens === "ES" ? "Spain" : "Sweden");
+  h += '<div class="card"><div class="card-head"><span class="label">' + esc(title) + " · " + y + "</span></div>";
+  if (lens === "both") {
+    h += '<p class="hint" style="margin:0 0 10px">Stretches of three days or more when both calendars are off — the easy ' +
+         "windows for a visit in either direction.</p>";
+  } else {
+    h += '<p class="hint" style="margin:0 0 10px">Runs of three days or more off, plus single days worth taking as a bridge.</p>';
+  }
+  if (!wins.length) {
+    h += '<p class="empty">No windows found for ' + y + " under this lens.</p>";
+  } else {
+    for (var w = 0; w < wins.length; w++) {
+      var win = wins[w];
+      h += '<button class="win' + (win.kind === "bridge" ? " bridge" : "") + '" data-act="jump" data-v="' + win.start + '">' +
+        '<span class="t"><span class="dates">' + esc(fmtRange(win.start, win.end)) + "</span>" +
+        '<span class="len">' + win.len + " days" + (win.kind === "bridge" ? " · bridge" : "") + "</span></span>" +
+        '<span class="why">' + esc(win.why) + "</span></button>";
+    }
+  }
+  h += "</div>";
+
+  el("view-cal").innerHTML = h;
+}
+
+/* =========================================================================
+   Trips
+   ========================================================================= */
+
+function blankTrip() {
+  return {
+    id: "", name: "", place: "", start: "", end: "",
+    type: TYPES[0], status: STATUSES[0], notes: "", breakdown: emptyBreakdown()
+  };
+}
+
+function tripById(id) {
+  for (var i = 0; i < state.trips.length; i++) if (state.trips[i].id === id) return state.trips[i];
+  return null;
+}
+
+function tripForm(t) {
+  var h = '<div class="card" id="trip-form">' +
+    '<div class="card-head"><span class="label">' + (t.id ? "Edit trip" : "New trip") + "</span></div>";
+
+  h += '<div class="field"><span class="label">Name</span>' +
+       '<input id="f-name" type="text" placeholder="Weekend somewhere" value="' + esc(t.name) + '"></div>';
+
+  h += '<div class="two">' +
+    '<div class="field"><span class="label">Where</span>' +
+      '<input id="f-place" type="text" placeholder="MAD, ARN…" value="' + esc(t.place) + '"></div>' +
+    '<div class="field"><span class="label">Type</span><select id="f-type">' + optList(TYPES, t.type) + "</select></div>" +
+  "</div>";
+
+  h += '<div class="two">' +
+    '<div class="field"><span class="label">Start</span><input id="f-start" type="date" value="' + esc(t.start) + '"></div>' +
+    '<div class="field"><span class="label">End</span><input id="f-end" type="date" value="' + esc(t.end) + '"></div>' +
+  "</div>";
+
+  h += '<div class="field"><span class="label">Status</span><select id="f-status">' + optList(STATUSES, t.status) + "</select></div>";
+
+  h += '<div class="field"><span class="label">Budget breakdown</span><div class="cats">';
+  for (var i = 0; i < CATS.length; i++) {
+    var c = CATS[i];
+    var v = num(t.breakdown[c.k]);
+    h += '<div class="cat-in"><i style="background:' + c.c + '"></i>' +
+      '<label for="f-' + c.k + '">' + c.label + "</label>" +
+      '<input id="f-' + c.k + '" class="f-cat" data-cat="' + c.k + '" type="text" inputmode="decimal" ' +
+        'placeholder="0" value="' + (v ? esc(String(v)) : "") + '"></div>';
+  }
+  h += "</div></div>";
+
+  h += '<div class="field"><span class="label">Notes</span>' +
+       '<textarea id="f-notes" placeholder="Anything worth remembering">' + esc(t.notes) + "</textarea></div>";
+
+  h += '<div class="form-total"><span class="label">Trip total</span>' +
+       '<span class="v" id="f-total">' + money(tripTotal(t)) + "</span></div>";
+
+  h += '<div class="row" style="margin-top:12px">' +
+    '<button class="btn primary grow" data-act="trip-save">Save trip</button>' +
+    '<button class="btn" data-act="trip-cancel">Cancel</button>' +
+  "</div></div>";
+  return h;
+}
+
+function optList(arr, sel) {
+  var h = "";
+  for (var i = 0; i < arr.length; i++) {
+    h += '<option value="' + esc(arr[i]) + '"' + (arr[i] === sel ? " selected" : "") + ">" + esc(arr[i]) + "</option>";
+  }
+  return h;
+}
+
+function formTotal() {
+  var inputs = document.querySelectorAll(".f-cat");
+  var s = 0;
+  for (var i = 0; i < inputs.length; i++) s += num(inputs[i].value);
+  return s;
+}
+
+function readForm() {
+  var t = ui.editingId ? tripById(ui.editingId) : null;
+  var out = {
+    id: t ? t.id : uid(),
+    name: el("f-name").value.trim(),
+    place: el("f-place").value.trim(),
+    start: el("f-start").value || "",
+    end: el("f-end").value || "",
+    type: el("f-type").value,
+    status: el("f-status").value,
+    notes: el("f-notes").value,
+    breakdown: emptyBreakdown()
+  };
+  for (var i = 0; i < CATS.length; i++) out.breakdown[CATS[i].k] = num(el("f-" + CATS[i].k).value);
+  if (out.start && out.end && out.end < out.start) { var s = out.start; out.start = out.end; out.end = s; }
+  return out;
+}
+
+function tripCard(t) {
+  var tot = tripTotal(t);
+  var open = ui.openTrip === t.id;
+
+  var bar = "";
+  if (tot > 0) {
+    for (var i = 0; i < CATS.length; i++) {
+      var v = num(t.breakdown[CATS[i].k]);
+      if (v <= 0) continue;
+      bar += '<i style="width:' + (v / tot * 100) + '%;background:' + CATS[i].c + '"></i>';
+    }
+  }
+
+  var meta = [];
+  if (t.place) meta.push(esc(t.place));
+  meta.push(esc(fmtRange(t.start, t.end)));
+  meta.push(esc(t.type));
+
+  var h = '<div class="trip">' +
+    '<button class="trip-top" data-act="trip-open" data-v="' + esc(t.id) + '" aria-expanded="' + (open ? "true" : "false") + '">' +
+      '<span class="row" style="align-items:flex-start">' +
+        '<span class="grow"><span class="trip-name">' + esc(t.name || "Untitled trip") + "</span>" +
+          '<span class="trip-meta">' + meta.join(" · ") + "</span></span>" +
+        '<span style="text-align:right"><span class="trip-tot">' + money(tot) + "</span><br>" +
+          '<span class="tag s-' + esc(t.status.replace(/\s+/g, "")) + '">' + esc(t.status) + "</span></span>" +
+      "</span>" +
+      '<span class="trip-bar">' + bar + "</span>" +
+    "</button>";
+
+  if (open) {
+    h += '<div class="trip-body">';
+    for (var c = 0; c < CATS.length; c++) {
+      var cat = CATS[c], val = num(t.breakdown[cat.k]);
+      var p = tot > 0 ? val / tot : 0;
+      h += '<div class="brk"><span class="k">' + cat.label + "</span>" +
+        '<span class="t"><i style="width:' + (p * 100) + '%;background:' + cat.c + '"></i></span>' +
+        '<span class="v">' + money(val) + "</span>" +
+        '<span class="p">' + (tot > 0 ? Math.round(p * 100) + "%" : "—") + "</span></div>";
+    }
+    h += '<div class="brk" style="border-top:1px solid var(--line);margin-top:6px;padding-top:8px">' +
+      '<span class="k" style="color:var(--ink);font-weight:600">Total</span><span class="t" style="background:transparent"></span>' +
+      '<span class="v" style="font-weight:700;color:var(--ink)">' + money(tot) + '</span><span class="p"></span></div>';
+
+    if (t.notes) h += '<div class="notes">' + esc(t.notes) + "</div>";
+
+    h += '<div class="row" style="margin-top:11px">' +
+      '<button class="btn small grow" data-act="trip-edit" data-v="' + esc(t.id) + '">Edit</button>' +
+      '<button class="btn small danger" data-act="trip-del" data-v="' + esc(t.id) + '">Delete</button>' +
+    "</div></div>";
+  }
+
+  h += "</div>";
+  return h;
+}
+
+function renderTrips() {
+  var h = "";
+  var sorted = state.trips.slice().sort(function (a, b) { return tripTotal(b) - tripTotal(a); });
+
+  var grand = 0;
+  for (var g = 0; g < sorted.length; g++) grand += tripTotal(sorted[g]);
+
+  h += '<div class="card"><div class="card-head"><span class="label">Trips · ' + sorted.length +
+       "</span><span class=\"trip-tot\">" + money(grand) + "</span></div>" +
+       '<button class="btn primary" style="width:100%" data-act="trip-new">＋ Add a trip</button></div>';
+
+  if (ui.formOpen) {
+    h += tripForm(ui.editingId ? tripById(ui.editingId) || blankTrip() : (ui.draft || blankTrip()));
+  }
+
+  if (!sorted.length) {
+    h += '<div class="card"><p class="empty" style="margin:0">No trips yet. Add one and it will show up on the dashboard ' +
+         "and in the calendar.</p></div>";
+  } else {
+    for (var i = 0; i < sorted.length; i++) h += tripCard(sorted[i]);
+  }
+
+  el("view-trips").innerHTML = h;
+}
+
+/* =========================================================================
+   Backup / Restore / Reset
+   ========================================================================= */
+
+function backupName() { return "runway-backup-" + todayISO() + ".json"; }
+
+function serialise() { return JSON.stringify(state, null, 2); }
+
+function doExport() {
+  var blob = new Blob([serialise()], { type: "application/json" });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url;
+  a.download = backupName();
+  a.rel = "noopener";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+  toast("Backup saved as " + backupName());
+}
+
+function applyImported(text, label) {
+  var parsed;
+  try { parsed = JSON.parse(text); }
+  catch (e) { toast("That file isn't valid JSON."); return false; }
+  if (!parsed || typeof parsed !== "object") { toast("That file doesn't look like a Runway backup."); return false; }
+  var next = migrate(parsed);
+  var msg = "Replace everything on this device with " + (label || "this file") + "?\n\n" +
+            next.trips.length + " trip(s) will be loaded. Your current data will be overwritten.";
+  if (!window.confirm(msg)) return false;
+  state = next;
+  save();
+  render();
+  toast("Restored " + next.trips.length + " trip(s).");
+  return true;
+}
+
+function doImport() { el("importer").click(); }
+
+function doReset() {
+  if (!window.confirm("Reset everything?\n\nBudget, points and all trips on this device will be cleared. " +
+                      "This can't be undone — export a backup first if you want to keep it.")) return;
+  state = defaultState();
+  ui.openTrip = null; ui.formOpen = false; ui.editingId = null; ui.draft = null;
+  save();
+  render();
+  toast("Cleared. Empty and ready.");
+}
+
+/* =========================================================================
+   Optional: bind to a real local file (File System Access API)
+   Desktop Chromium/Edge only — hidden entirely on iPad Safari.
+   ========================================================================= */
+
+var fsState = { handle: null, name: "" };
+var fsTimer = null;
+
+function hasFSA() {
+  return !!(window.showSaveFilePicker && window.showOpenFilePicker);
+}
+
+function idb(cb) {
+  if (!window.indexedDB) { cb(null); return; }
+  var req;
+  try { req = indexedDB.open("runway-fs", 1); }
+  catch (e) { cb(null); return; }
+  req.onupgradeneeded = function () { req.result.createObjectStore("handles"); };
+  req.onsuccess = function () { cb(req.result); };
+  req.onerror = function () { cb(null); };
+}
+
+function idbPut(key, val) {
+  idb(function (db) {
+    if (!db) return;
+    try { db.transaction("handles", "readwrite").objectStore("handles").put(val, key); } catch (e) {}
+  });
+}
+
+function idbGet(key, cb) {
+  idb(function (db) {
+    if (!db) { cb(null); return; }
+    try {
+      var r = db.transaction("handles", "readonly").objectStore("handles").get(key);
+      r.onsuccess = function () { cb(r.result || null); };
+      r.onerror = function () { cb(null); };
+    } catch (e) { cb(null); }
+  });
+}
+
+function fsStatus(msg) {
+  var n = el("fs-status");
+  if (n) n.textContent = msg;
+}
+
+function writeHandle(handle) {
+  return handle.createWritable().then(function (w) {
+    return w.write(serialise()).then(function () { return w.close(); });
+  });
+}
+
+/* Debounced mirror of state into the bound file. */
+function fileSync() {
+  if (!fsState.handle) return;
+  if (fsTimer) clearTimeout(fsTimer);
+  fsTimer = setTimeout(function () {
+    writeHandle(fsState.handle).then(function () {
+      fsStatus("Auto-saved to " + fsState.name + " · " + new Date().toLocaleTimeString());
+    })["catch"](function () {
+      fsStatus("Couldn't write to " + fsState.name + " — re-link the file.");
+    });
+  }, 600);
+}
+
+function linkFile() {
+  window.showSaveFilePicker({
+    suggestedName: "runway-data.json",
+    types: [{ description: "Runway data", accept: { "application/json": [".json"] } }]
+  }).then(function (handle) {
+    fsState.handle = handle;
+    fsState.name = handle.name;
+    idbPut("data", handle);
+    return writeHandle(handle);
+  }).then(function () {
+    toast("Linked. Changes now auto-save to the file.");
+    render();
+  })["catch"](function (e) {
+    if (e && e.name === "AbortError") return;
+    toast("Couldn't link that file.");
+  });
+}
+
+function openFile() {
+  window.showOpenFilePicker({
+    types: [{ description: "Runway data", accept: { "application/json": [".json"] } }],
+    multiple: false
+  }).then(function (handles) {
+    var handle = handles[0];
+    return handle.getFile().then(function (f) { return f.text(); }).then(function (txt) {
+      if (applyImported(txt, handle.name)) {
+        fsState.handle = handle;
+        fsState.name = handle.name;
+        idbPut("data", handle);
+        render();
+      }
+    });
+  })["catch"](function (e) {
+    if (e && e.name === "AbortError") return;
+    toast("Couldn't open that file.");
+  });
+}
+
+function restoreHandle() {
+  if (!hasFSA()) return;
+  idbGet("data", function (handle) {
+    if (!handle || !handle.queryPermission) return;
+    handle.queryPermission({ mode: "readwrite" }).then(function (p) {
+      if (p !== "granted") return;   /* re-granting needs a user gesture */
+      fsState.handle = handle;
+      fsState.name = handle.name;
+      if (ui.tab === "dash") render();
+    })["catch"](function () {});
+  });
+}
+
+/* =========================================================================
+   Rendering + events
+   ========================================================================= */
+
+function render() {
+  if (ui.tab === "dash") renderDash();
+  else if (ui.tab === "cal") renderCal();
+  else renderTrips();
+}
+
+function setTab(tab) {
+  ui.tab = tab;
+  var tabs = document.querySelectorAll(".tab");
+  for (var i = 0; i < tabs.length; i++) {
+    var on = tabs[i].getAttribute("data-tab") === tab;
+    tabs[i].classList.toggle("is-on", on);
+    tabs[i].setAttribute("aria-selected", on ? "true" : "false");
+  }
+  el("view-dash").hidden = tab !== "dash";
+  el("view-cal").hidden = tab !== "cal";
+  el("view-trips").hidden = tab !== "trips";
+  render();
+  window.scrollTo(0, 0);
+}
+
+function jumpTo(dISO) {
+  var d = parseISO(dISO);
+  if (!d) return;
+  ui.calYear = d.getFullYear();
+  ui.calMonth = d.getMonth();
+  ui.selDay = dISO;
+  ui.tab === "cal" ? render() : setTab("cal");
+}
+
+document.addEventListener("click", function (ev) {
+  var btn = null;
+  var n = ev.target;
+  while (n && n !== document) {
+    if (n.getAttribute && (n.getAttribute("data-act") || n.getAttribute("data-tab"))) { btn = n; break; }
+    n = n.parentNode;
+  }
+  if (!btn) return;
+
+  var tab = btn.getAttribute("data-tab");
+  if (tab) { setTab(tab); return; }
+
+  var act = btn.getAttribute("data-act");
+  var v = btn.getAttribute("data-v");
+
+  switch (act) {
+    case "year":
+      ui.year += parseInt(v, 10);
+      render();
+      break;
+
+    case "month":
+      ui.calMonth += parseInt(v, 10);
+      if (ui.calMonth < 0) { ui.calMonth = 11; ui.calYear--; }
+      if (ui.calMonth > 11) { ui.calMonth = 0; ui.calYear++; }
+      render();
+      break;
+
+    case "lens":
+      ui.lens = v;
+      render();
+      break;
+
+    case "day":
+      var d = parseISO(v);
+      ui.selDay = (ui.selDay === v) ? "" : v;
+      if (d && d.getMonth() !== ui.calMonth) { ui.calMonth = d.getMonth(); ui.calYear = d.getFullYear(); }
+      render();
+      break;
+
+    case "jump":
+      jumpTo(v);
+      break;
+
+    case "trip-new":
+      ui.editingId = null; ui.draft = blankTrip(); ui.formOpen = true;
+      render();
+      var nameIn = el("f-name"); if (nameIn) nameIn.focus();
+      break;
+
+    case "trip-cancel":
+      ui.formOpen = false; ui.editingId = null; ui.draft = null;
+      render();
+      break;
+
+    case "trip-save":
+      var t = readForm();
+      if (!t.name) { toast("Give the trip a name first."); el("f-name").focus(); return; }
+      if (ui.editingId) {
+        for (var i = 0; i < state.trips.length; i++) {
+          if (state.trips[i].id === ui.editingId) { state.trips[i] = t; break; }
+        }
+      } else {
+        state.trips.push(t);
+      }
+      ui.formOpen = false; ui.editingId = null; ui.draft = null;
+      save();
+      render();
+      toast("Saved " + t.name + " · " + money(tripTotal(t)));
+      break;
+
+    case "trip-open":
+      ui.openTrip = ui.openTrip === v ? null : v;
+      render();
+      break;
+
+    case "trip-edit":
+      ui.editingId = v; ui.formOpen = true; ui.openTrip = null;
+      render();
+      var f = el("trip-form");
+      if (f && f.scrollIntoView) f.scrollIntoView({ block: "start" });
+      break;
+
+    case "trip-del":
+      var tt = tripById(v);
+      if (!tt) return;
+      if (!window.confirm("Delete " + (tt.name || "this trip") + "?")) return;
+      for (var j = 0; j < state.trips.length; j++) {
+        if (state.trips[j].id === v) { state.trips.splice(j, 1); break; }
+      }
+      if (ui.openTrip === v) ui.openTrip = null;
+      if (ui.editingId === v) { ui.editingId = null; ui.formOpen = false; }
+      save();
+      render();
+      toast("Deleted.");
+      break;
+
+    case "export": doExport(); break;
+    case "import": doImport(); break;
+    case "reset":  doReset();  break;
+    case "link-file": linkFile(); break;
+    case "open-file": openFile(); break;
+  }
+});
+
+/* Live input: budget, points, trip category totals. */
+document.addEventListener("input", function (ev) {
+  var t = ev.target;
+  if (!t || !t.id && !t.getAttribute) return;
+
+  if (t.id === "budget") {
+    var raw = t.value.replace(/[^\d.,\-]/g, "");
+    if (raw === "") delete state.budgetByYear[String(ui.year)];
+    else state.budgetByYear[String(ui.year)] = num(raw);
+    save();
+    refreshDashNumbers();
+    return;
+  }
+
+  var pk = t.getAttribute("data-pts");
+  if (pk) {
+    state.points[pk] = num(t.value);
+    save();
+    var tot = el("view-dash").querySelector(".pts-total .v");
+    if (tot) tot.textContent = intFmt(num(state.points.avios) + num(state.points.revolut)) + " pts";
+    return;
+  }
+
+  if (t.className && t.className.indexOf("f-cat") >= 0) {
+    var out = el("f-total");
+    if (out) out.textContent = money(formTotal());
+  }
+});
+
+/* Update the dashboard without re-rendering (keeps focus in the budget field). */
+var dashTimer = null;
+function refreshDashNumbers() {
+  if (dashTimer) clearTimeout(dashTimer);
+  dashTimer = setTimeout(function () {
+    if (ui.tab !== "dash") return;
+    var focus = document.activeElement;
+    var id = focus && focus.id;
+    var caret = null;
+    if (id === "budget" && focus.selectionStart != null) caret = focus.selectionStart;
+    renderDash();
+    if (id) {
+      var again = el(id);
+      if (again) {
+        again.focus();
+        if (caret != null && again.setSelectionRange) {
+          try { again.setSelectionRange(caret, caret); } catch (e) {}
+        }
+      }
+    }
+  }, 220);
+}
+
+el("importer").addEventListener("change", function (ev) {
+  var file = ev.target.files && ev.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function () { applyImported(String(reader.result), file.name); };
+  reader.onerror = function () { toast("Couldn't read that file."); };
+  reader.readAsText(file);
+  ev.target.value = "";
+});
+
+/* =========================================================================
+   Boot
+   ========================================================================= */
+
+function init() {
+  load();
+
+  var now = new Date();
+  ui.year = now.getFullYear();
+  ui.calYear = PLANNING_YEAR;
+  ui.calMonth = now.getFullYear() === PLANNING_YEAR ? now.getMonth() : 0;
+  ui.selDay = now.getFullYear() === PLANNING_YEAR ? todayISO() : "";
+
+  setTab("dash");
+  restoreHandle();
+
+  if (!ui.storageOK) toast("Local storage is blocked — use Backup to keep your data.");
+}
+
+init();
+
+window.addEventListener("load", function () {
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js").catch(function () { /* offline support is optional */ });
+  }
+});
+
+})();
+</script>
+</body>
+</html>
