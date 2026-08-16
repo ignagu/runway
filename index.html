@@ -119,6 +119,13 @@ input.num-in{font-family:var(--mono); font-variant-numeric:tabular-nums}
   font-family:var(--mono); font-weight:700; font-size:30px; letter-spacing:-.01em; color:var(--ink);
 }
 #budget:focus{outline:0; border-bottom-color:var(--ink)}
+.bwin{display:flex; align-items:center; gap:9px; margin-top:9px; flex-wrap:wrap}
+.bwin .hint b{color:var(--ink); font-weight:600}
+.bwin input[type="date"]{flex:1; min-width:150px; padding:7px 9px}
+.bwin .label{flex:0 0 auto}
+.mcol.out{opacity:.4}
+.mlabels span.out{opacity:.45}
+.mdiv{position:absolute; top:-2px; bottom:-2px; width:0; border-left:1px dashed #A9B6C4; pointer-events:none}
 .hero .big{
   font-family:var(--mono); font-weight:700; font-size:38px; letter-spacing:-.02em;
   color:var(--ink); line-height:1.05; margin:2px 0 2px;
@@ -670,6 +677,7 @@ function seedCats() {
 function defaultState() {
   return {
     budgetByYear: {},
+    budgetStartByYear: {},   /* "YYYY": "YYYY-MM-DD" — absent means 1 Jan */
     currency: DEFAULT_CURRENCY,
     categories: seedCats(),
     trips: []
@@ -682,6 +690,7 @@ var ui = {
   tab: "dash",
   year: new Date().getFullYear(),
   paceMonth: null,        /* month selected in the month-by-month chart */
+  budgetDateOpen: false,  /* editing the budget's start date */
   calYear: PLANNING_YEAR,
   calMonth: 0,
   calView: "month",       /* year | month | week */
@@ -711,6 +720,17 @@ function migrate(raw) {
     }
   } else if (raw.budget != null) {
     s.budgetByYear[String(raw.year || PLANNING_YEAR)] = num(raw.budget);
+  }
+
+  if (raw.budgetStartByYear && typeof raw.budgetStartByYear === "object") {
+    for (var by in raw.budgetStartByYear) {
+      if (!Object.prototype.hasOwnProperty.call(raw.budgetStartByYear, by)) continue;
+      var bv = raw.budgetStartByYear[by];
+      /* a start date only makes sense inside its own year */
+      if (/^\d{4}$/.test(String(by)) && /^\d{4}-\d{2}-\d{2}$/.test(bv || "") && bv.slice(0, 4) === String(by)) {
+        s.budgetStartByYear[String(by)] = bv;
+      }
+    }
   }
 
   if (raw.currency && CURRENCIES[raw.currency]) s.currency = raw.currency;
@@ -849,13 +869,72 @@ function tripsForYear(y) {
 
 function budgetFor(y) { return num(state.budgetByYear[String(y)]); }
 
+/* --- the budget window -------------------------------------------------
+   A budget entered in August is a budget for August-to-December, not for a
+   year that is already two thirds gone. Every figure below is scoped to the
+   window [start .. 31 Dec], which is the whole year unless the user says
+   otherwise. */
+
+function budgetStart(y) {
+  var d = parseISO(state.budgetStartByYear[String(y)]);
+  return (d && d.getFullYear() === y) ? d : new Date(y, 0, 1);
+}
+
+function budgetWindow(y) {
+  var from = budgetStart(y);
+  var afterEnd = new Date(y + 1, 0, 1);          /* exclusive end */
+  var yearStart = new Date(y, 0, 1);
+  var dayMs = 86400000;
+  var windowDays = Math.round((afterEnd - from) / dayMs);
+  var yearDays = Math.round((afterEnd - yearStart) / dayMs);
+  return {
+    from: from,
+    fromISO: iso(from),
+    afterEnd: afterEnd,
+    partial: from.getMonth() !== 0 || from.getDate() !== 1,
+    days: windowDays,
+    months: 12 * windowDays / yearDays
+  };
+}
+
+function windowLabel(y) {
+  var w = budgetWindow(y);
+  if (!w.partial) return "1 Jan \u2013 31 Dec " + y;
+  return w.from.getDate() + " " + MON_ABBR[w.from.getMonth()] + " \u2013 31 Dec " + y;
+}
+
+/* Fraction of the *window* gone, live from the real clock. */
+function windowElapsed(y) {
+  var w = budgetWindow(y);
+  var now = Date.now();
+  if (now <= w.from.getTime()) return 0;
+  if (now >= w.afterEnd.getTime()) return 1;
+  return (now - w.from.getTime()) / (w.afterEnd.getTime() - w.from.getTime());
+}
+
+/* A dated trip starting before the window predates the budget, so it cannot
+   consume it. Undated trips are still to come, so they count. */
+function inWindow(t, y) {
+  var w = budgetWindow(y);
+  if (!w.partial || !t.start) return true;
+  return t.start >= w.fromISO;
+}
+
 function yearStats(y) {
-  var trips = tripsForYear(y);
-  var spent = 0, upcoming = 0;
-  for (var i = 0; i < trips.length; i++) {
-    var tot = tripTotal(trips[i]);
-    if (trips[i].status === "Done") spent += tot; else upcoming += tot;
+  var all = tripsForYear(y);
+  var trips = [], spent = 0, upcoming = 0;
+  var outsideAmount = 0, outsideCount = 0;
+
+  for (var i = 0; i < all.length; i++) {
+    var tot = tripTotal(all[i]);
+    if (!inWindow(all[i], y)) {
+      if (tot > 0) { outsideAmount += tot; outsideCount++; }
+      continue;
+    }
+    trips.push(all[i]);
+    if (all[i].status === "Done") spent += tot; else upcoming += tot;
   }
+
   var budget = budgetFor(y);
   var allocatedAll = spent + upcoming;
   return {
@@ -866,52 +945,47 @@ function yearStats(y) {
     upcoming: upcoming,          /* allocated, status !== Done */
     allocatedAll: allocatedAll,
     free: budget - allocatedAll, /* unallocated; negative when over */
-    left: budget - spent,        /* left this year */
-    over: Math.max(0, allocatedAll - budget)
+    left: budget - spent,        /* left to spend */
+    over: Math.max(0, allocatedAll - budget),
+    outsideAmount: outsideAmount,
+    outsideCount: outsideCount
   };
-}
-
-/* Fraction of the year elapsed right now, live from the real clock. */
-function yearElapsed(y) {
-  var now = new Date();
-  var cy = now.getFullYear();
-  if (y > cy) return 0;
-  if (y < cy) return 1;
-  var start = new Date(y, 0, 1).getTime();
-  var end = new Date(y + 1, 0, 1).getTime();
-  return clamp((now.getTime() - start) / (end - start), 0, 1);
 }
 
 function pacing(y) {
   var st = yearStats(y);
-  var elapsed = yearElapsed(y);
-  var now = new Date();
-  var phase = y > now.getFullYear() ? "future" : (y < now.getFullYear() ? "past" : "current");
+  var w = budgetWindow(y);
+  var elapsed = windowElapsed(y);
+  var now = Date.now();
+  var phase = now < w.from.getTime() ? "future"
+            : (now >= w.afterEnd.getTime() ? "past" : "current");
   var committed = st.budget > 0 ? st.allocatedAll / st.budget : 0;
-  var monthsLeft = 12 * (1 - elapsed);
+  var monthsLeft = w.months * (1 - elapsed);
+  var period = w.partial ? "the window" : "the year";
 
   var verdict, tone, line;
   if (st.budget <= 0) {
     verdict = "no budget"; tone = "";
-    line = "Set a budget for " + y + " to see how the year is pacing.";
+    line = "Set a budget for " + windowLabel(y) + " to see how it is pacing.";
   } else if (committed > 1) {
     verdict = "over"; tone = "over";
-    line = "Committed " + pct(committed) + " of the budget — " + money(st.over) + " past the line.";
+    line = "Committed " + pct(committed) + " of the budget \u2014 " + money(st.over) + " past the line.";
   } else if (phase === "past") {
     verdict = "wrapped"; tone = "";
     line = y + " is wrapped: " + pct(committed) + " of the budget committed.";
   } else if (phase === "future") {
     verdict = "not started"; tone = "blue";
-    line = y + " hasn't started — " + money(st.free) + " free to plan across the whole year.";
+    line = (w.partial ? "This budget starts " + fmtDay(w.from) : y + " hasn\u2019t started") +
+           " \u2014 " + money(st.free) + " free to plan across " + period + ".";
   } else if (committed < elapsed - 0.1) {
     verdict = "behind"; tone = "blue";
-    line = "Under-committed for the date: " + pct(committed) + " planned vs " + pct(elapsed) + " of the year gone.";
+    line = "Under-committed for the date: " + pct(committed) + " planned vs " + pct(elapsed) + " of " + period + " gone.";
   } else if (committed > elapsed + 0.1) {
     verdict = "ahead"; tone = "amber";
-    line = "Running ahead: " + pct(committed) + " committed against " + pct(elapsed) + " of the year.";
+    line = "Running ahead: " + pct(committed) + " committed against " + pct(elapsed) + " of " + period + ".";
   } else {
     verdict = "on pace"; tone = "go";
-    line = "On pace — " + pct(committed) + " committed, " + pct(elapsed) + " of the year gone.";
+    line = "On pace \u2014 " + pct(committed) + " committed, " + pct(elapsed) + " of " + period + " gone.";
   }
 
   var perMonth = null;
@@ -920,7 +994,7 @@ function pacing(y) {
   }
 
   return {
-    st: st, elapsed: elapsed, committed: committed, phase: phase,
+    st: st, w: w, elapsed: elapsed, committed: committed, phase: phase,
     verdict: verdict, tone: tone, line: line,
     monthsLeft: monthsLeft, perMonth: perMonth
   };
@@ -998,16 +1072,22 @@ function monthly(y) {
 }
 
 /* Stacked bars, one column per month. Values are read by tapping a column
-   rather than printed on every bar. */
+   rather than printed on every bar. Months before the budget window are dimmed:
+   their spend is real, but it does not draw on this budget. */
 function monthChart(y) {
   var m = monthly(y);
+  var st = yearStats(y);      /* legend totals match the rest of the card: window only */
   var budget = budgetFor(y);
+  var w = budgetWindow(y);
+  var startMonth = w.from.getMonth();
   var H = 104;
-  var scaleMax = Math.max(m.max, budget > 0 ? budget / 12 : 0);
+  var perMonthEven = budget > 0 && w.months > 0 ? budget / w.months : 0;
+  var scaleMax = Math.max(m.max, perMonthEven);
 
   var bars = "";
   for (var i = 0; i < 12; i++) {
     var sp = m.spent[i], pl = m.planned[i], tot = sp + pl;
+    var outside = w.partial && i < startMonth;
     var segs = "";
     if (scaleMax > 0) {
       /* planned sits on top of spent; the top segment carries the rounded end */
@@ -1020,29 +1100,39 @@ function monthChart(y) {
                 'px;background:var(--spent)"></i>';
       }
     }
-    bars += '<button class="mcol' + (ui.paceMonth === i ? " is-sel" : "") + '" data-act="pace-month" data-v="' + i +
-            '" aria-label="' + MONTHS[i] + " " + money(tot) + '">' + segs + "</button>";
+    bars += '<button class="mcol' + (ui.paceMonth === i ? " is-sel" : "") + (outside ? " out" : "") +
+            '" data-act="pace-month" data-v="' + i + '" aria-label="' + MONTHS[i] + " " + money(tot) +
+            (outside ? ", before the budget window" : "") + '">' + segs + "</button>";
   }
 
   var labels = "";
-  for (var L = 0; L < 12; L++) labels += "<span>" + MON_SHORT[L] + "</span>";
-
-  var evenLine = "";
-  if (budget > 0 && scaleMax > 0) {
-    var atPx = (budget / 12) / scaleMax * H;
-    evenLine = '<span class="mpace" style="bottom:' + atPx + 'px"></span>';
+  for (var L = 0; L < 12; L++) {
+    labels += '<span' + (w.partial && L < startMonth ? ' class="out"' : "") + ">" + MON_SHORT[L] + "</span>";
   }
+
+  /* the even-pace line only spans the window it belongs to */
+  var evenLine = "";
+  if (perMonthEven > 0 && scaleMax > 0) {
+    var atPx = perMonthEven / scaleMax * H;
+    var leftPct = w.partial ? (startMonth / 12 * 100) : 0;
+    evenLine = '<span class="mpace" style="bottom:' + atPx + 'px;left:' + leftPct + '%"></span>';
+  }
+  var divider = w.partial
+    ? '<span class="mdiv" style="left:' + (startMonth / 12 * 100) + '%"></span>' : "";
 
   var read;
   if (ui.paceMonth != null) {
     var i2 = ui.paceMonth;
-    read = "<b>" + MONTHS[i2] + "</b> · " + money(m.spent[i2] + m.planned[i2]) +
-           " (" + money(m.spent[i2]) + " spent, " + money(m.planned[i2]) + " planned)";
+    read = "<b>" + MONTHS[i2] + "</b> \u00b7 " + money(m.spent[i2] + m.planned[i2]) +
+           " (" + money(m.spent[i2]) + " spent, " + money(m.planned[i2]) + " planned)" +
+           (w.partial && i2 < startMonth ? " \u00b7 before this budget" : "");
   } else if (m.max === 0) {
     read = "No dated trips in " + y + " yet.";
   } else {
     read = "Tap a month for its figures." +
-           (budget > 0 ? " The dashed line is an even " + money(budget / 12) + " a month." : "");
+           (perMonthEven > 0 ? " The dashed line is an even " + money(perMonthEven) + " a month across " +
+             (w.partial ? "the window" : "the year") + "." : "") +
+           (w.partial ? " Faded months are before it and are not in the totals." : "");
   }
 
   var undatedNote = "";
@@ -1054,10 +1144,10 @@ function monthChart(y) {
   return '<div class="mwrap">' +
     '<div class="card-head" style="margin:0 0 2px"><span class="label">Month by month</span></div>' +
     '<div class="legend" style="margin-bottom:4px">' +
-      '<span><b style="background:var(--spent)"></b>Spent <em>' + money(m.undated.spent + sum(m.spent)) + "</em></span>" +
-      '<span><b style="background:var(--alloc)"></b>Planned <em>' + money(m.undated.planned + sum(m.planned)) + "</em></span>" +
+      '<span><b style="background:var(--spent)"></b>Spent <em>' + money(st.spent) + "</em></span>" +
+      '<span><b style="background:var(--alloc)"></b>Planned <em>' + money(st.upcoming) + "</em></span>" +
     "</div>" +
-    '<div class="mchart">' + evenLine + bars + "</div>" +
+    '<div class="mchart">' + evenLine + divider + bars + "</div>" +
     '<div class="mlabels">' + labels + "</div>" +
     '<p class="hint mread">' + read + "</p>" + undatedNote +
   "</div>";
@@ -1074,8 +1164,9 @@ function pacePanel(y) {
   var color = TONE_COLOR[p.tone];
   var fill = clamp(p.committed, 0, 1) * 100;
 
+  /* the strip spans the budget window, so the today marker lines up with it */
   var months = "";
-  for (var i = 0; i < 12; i++) months += "<span>" + MON_SHORT[i] + "</span>";
+  for (var i = p.w.from.getMonth(); i < 12; i++) months += "<span>" + MON_SHORT[i] + "</span>";
 
   var marker = p.phase === "current"
     ? '<span class="pace-now" style="left:' + (p.elapsed * 100) + '%" title="today"></span>' : "";
@@ -1084,7 +1175,7 @@ function pacePanel(y) {
     : (p.st.free < 0 ? money(0) : money(p.perMonth));
 
   return '<div class="card">' +
-    '<div class="card-head"><span class="label">Pacing the year</span>' +
+    '<div class="card-head"><span class="label">Pacing ' + (p.w.partial ? "the window" : "the year") + "</span>" +
       '<span class="pill ' + p.tone + '">' + esc(p.verdict) + "</span></div>" +
     '<div class="pace-wrap">' +
       '<div class="pace-track">' +
@@ -1095,7 +1186,7 @@ function pacePanel(y) {
     '<div class="verdict"><span class="hint">' + esc(p.line) + "</span></div>" +
     '<div class="stats">' +
       '<div><span class="label">Committed</span><div class="v">' + (p.st.budget > 0 ? pct(p.committed) : "\u2014") + "</div></div>" +
-      '<div><span class="label">Year gone</span><div class="v">' + pct(p.elapsed) + "</div></div>" +
+      '<div><span class="label">' + (p.w.partial ? "Window gone" : "Year gone") + '</span><div class="v">' + pct(p.elapsed) + "</div></div>" +
       '<div><span class="label">Free / month</span><div class="v">' + perMonth + "</div></div>" +
     "</div>" +
     monthChart(y) +
@@ -1117,9 +1208,24 @@ function renderDash() {
          "Use Backup below to keep a copy of your data.</p></div>";
   }
 
-  /* budget + year switcher */
+  /* budget + year switcher + the window it covers */
+  var win = budgetWindow(y);
+  var winRow;
+  if (ui.budgetDateOpen) {
+    winRow = '<div class="bwin">' +
+      '<span class="label">Covers from</span>' +
+      '<input id="budget-from" type="date" value="' + esc(win.fromISO) + '" ' +
+        'min="' + y + '-01-01" max="' + y + '-12-31">' +
+      '<button class="btn small" data-act="budget-date">Done</button></div>' +
+      '<p class="hint" style="margin:6px 0 0">Now covering <b>' + esc(windowLabel(y)) + '</b>. ' +
+      "Trips starting earlier are left out of the figures below.</p>";
+  } else {
+    winRow = '<div class="bwin"><span class="hint">Covers <b>' + esc(windowLabel(y)) + "</b></span>" +
+      '<button class="btn small" data-act="budget-date">Change</button></div>';
+  }
+
   h += '<div class="card">' +
-    '<div class="card-head"><span class="label">Travel budget · per year</span>' +
+    '<div class="card-head"><span class="label">Travel budget</span>' +
       '<span class="yearsw">' +
         '<button class="stepper" data-act="year" data-v="-1" aria-label="Previous year">‹</button>' +
         '<span class="y num">' + y + "</span>" +
@@ -1127,15 +1233,16 @@ function renderDash() {
       "</span></div>" +
     '<div class="budget-in"><span class="cur">' + sym + "</span>" +
       '<input id="budget" class="num-in" type="text" inputmode="decimal" placeholder="0" ' +
-        'value="' + esc(budgetVal) + '" aria-label="Annual travel budget for ' + y + '"></div>' +
-    '<p class="hint" style="margin:8px 0 0">Stored per year. Trips count towards the year of their start date.</p>' +
+        'value="' + esc(budgetVal) + '" aria-label="Travel budget for ' + esc(windowLabel(y)) + '"></div>' +
+    winRow +
   "</div>";
 
   /* hero */
   h += '<div class="card hero">' +
     '<span class="label">Unallocated · free to plan</span>' +
     '<div class="big' + (st.free < 0 ? " is-over" : "") + '">' + money(st.free) + "</div>" +
-    '<span class="hint">' + money(st.budget) + " budget · " + money(st.allocatedAll) + " committed across " +
+    '<span class="hint">' + money(st.budget) + " for " + esc(windowLabel(y)) + " · " +
+      money(st.allocatedAll) + " committed across " +
       st.trips.length + (st.trips.length === 1 ? " trip" : " trips") + "</span>" +
     allocationBar(st) +
     '<div class="legend">' +
@@ -1149,8 +1256,14 @@ function renderDash() {
   h += '<div class="tiles">' +
     '<div class="tile"><span class="label">Allocated<br>(upcoming)</span><div class="v">' + money(st.upcoming) + "</div></div>" +
     '<div class="tile"><span class="label">Unallocated<br>(free)</span><div class="v' + (st.free < 0 ? " is-over" : "") + '">' + money(st.free) + "</div></div>" +
-    '<div class="tile"><span class="label">Left<br>this year</span><div class="v' + (st.left < 0 ? " is-over" : "") + '">' + money(st.left) + "</div></div>" +
+    '<div class="tile"><span class="label">Left<br>to spend</span><div class="v' + (st.left < 0 ? " is-over" : "") + '">' + money(st.left) + "</div></div>" +
   "</div>";
+
+  if (st.outsideCount > 0) {
+    h += '<p class="hint" style="margin:-4px 2px 12px">' + money(st.outsideAmount) + " on " + st.outsideCount +
+      (st.outsideCount === 1 ? " trip" : " trips") + " starting before " + esc(fmtDay(win.from)) +
+      " sits outside this budget.</p>";
+  }
 
   h += nudgeFor(st);
   h += pacePanel(y);
@@ -2124,6 +2237,13 @@ document.addEventListener("click", function (ev) {
       render();
       break;
 
+    case "budget-date":
+      ui.budgetDateOpen = !ui.budgetDateOpen;
+      render();
+      var fromIn = el("budget-from");
+      if (fromIn) fromIn.focus();
+      break;
+
     case "pace-month":
       var mi = parseInt(v, 10);
       ui.paceMonth = ui.paceMonth === mi ? null : mi;
@@ -2320,11 +2440,37 @@ document.addEventListener("input", function (ev) {
   if (!t || !t.id && !t.getAttribute) return;
 
   if (t.id === "budget") {
+    var key = String(ui.year);
     var raw = t.value.replace(/[^\d.,\-]/g, "");
-    if (raw === "") delete state.budgetByYear[String(ui.year)];
-    else state.budgetByYear[String(ui.year)] = num(raw);
+    if (raw === "") {
+      delete state.budgetByYear[key];
+    } else {
+      var firstEntry = state.budgetByYear[key] == null;
+      state.budgetByYear[key] = num(raw);
+      /* A budget first set part-way through the current year is a budget for
+         what is left of it, not for a year already mostly gone. Shown and
+         editable, never a silent assumption. */
+      if (firstEntry && state.budgetStartByYear[key] == null) {
+        var now = new Date();
+        if (now.getFullYear() === ui.year && !(now.getMonth() === 0 && now.getDate() === 1)) {
+          state.budgetStartByYear[key] = todayISO();
+        }
+      }
+    }
     save();
     refreshDashNumbers();
+    return;
+  }
+
+  if (t.id === "budget-from") {
+    var yk = String(ui.year);
+    var picked = parseISO(t.value);
+    if (picked && picked.getFullYear() === ui.year) {
+      if (picked.getMonth() === 0 && picked.getDate() === 1) delete state.budgetStartByYear[yk];
+      else state.budgetStartByYear[yk] = t.value;
+      save();
+      refreshDashNumbers();
+    }
     return;
   }
 

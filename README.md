@@ -6,9 +6,8 @@ site and installs to the iPad home screen.
 
 Three tabs:
 
-- **Dashboard** — annual budget per year, what's allocated vs. free, whether the
-  year is pacing ahead or behind the calendar, and a month-by-month bar chart of
-  spent vs. planned.
+- **Dashboard** — a budget per year, what's allocated vs. free, whether it is
+  pacing ahead or behind, and a month-by-month bar chart of spent vs. planned.
 - **Calendar** — year, month and week views over the 2026 Spanish (Madrid) and
   Swedish holidays, long-weekend runs and single-day bridges (*puentes*), plus
   your own trips.
@@ -87,6 +86,23 @@ reloads from it. The file handle is remembered in IndexedDB between sessions.
 
 iPad Safari has no such API, so those two buttons are hidden there and
 Backup/Restore is the local-file workflow.
+
+## The budget window
+
+A budget belongs to a window ending 31 December. Set one part-way through the
+current year and the window starts **today**, not 1 January — a budget entered in
+August is a budget for August to December, and pacing it against a year that is
+already two thirds gone would report you as hopelessly behind on day one.
+
+The window is shown under the budget and can be changed to any date in that
+year; set it to 1 January for a normal full-year budget. Everything follows from
+it: what counts as allocated, free budget per remaining month, the percentage of
+the period elapsed, and the even-pace line on the chart.
+
+Trips starting before the window do not draw on it — they predate the budget.
+They stay visible (faded in the chart, and their total called out under the
+tiles) so nothing is quietly dropped. Budgets stored without a window keep the
+full year, so existing figures do not shift.
 
 ## Categories
 
