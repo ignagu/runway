@@ -1,7 +1,7 @@
-/* The Runway — offline cache.
+/* Runway — offline cache.
    Cache-first for same-origin assets; cached index.html as the offline fallback. */
 
-var CACHE = "runway-v1";
+var CACHE = "runway-v3";
 
 var ASSETS = [
   "./",

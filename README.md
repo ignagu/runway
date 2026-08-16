@@ -1,4 +1,4 @@
-# The Runway
+# Runway
 
 A small, offline-first PWA for planning family travel against an annual budget.
 Plain HTML/CSS/JS, no build step, no backend, no tracking. It runs as a static
@@ -6,11 +6,14 @@ site and installs to the iPad home screen.
 
 Three tabs:
 
-- **Dashboard** — annual budget per year, what's allocated vs. free, and whether
-  the year is pacing ahead or behind the calendar.
-- **Calendar** — 2026 Spanish (Madrid) and Swedish holidays, long-weekend runs
-  and single-day bridges (*puentes*), plus your own trips.
-- **Trips** — trips with a six-category budget breakdown and a drill-down.
+- **Dashboard** — annual budget per year, what's allocated vs. free, whether the
+  year is pacing ahead or behind the calendar, and a month-by-month bar chart of
+  spent vs. planned.
+- **Calendar** — year, month and week views over the 2026 Spanish (Madrid) and
+  Swedish holidays, long-weekend runs and single-day bridges (*puentes*), plus
+  your own trips.
+- **Trips** — trips tagged with one or more countries, and a budget breakdown
+  whose categories you can extend.
 
 ## Never commit your data
 
@@ -84,6 +87,15 @@ reloads from it. The file handle is remembered in IndexedDB between sessions.
 
 iPad Safari has no such API, so those two buttons are hidden there and
 Backup/Restore is the local-file workflow.
+
+## Categories
+
+Six categories ship by default (Flights, Lodging, Food, Transport, Activities,
+Other). You can add your own from the trip form. Names are compared with case,
+accents, spacing and plurals ignored, so "lodgings" is recognised as the
+existing "Lodging" rather than added beside it; a near-miss like "Lodgin" asks
+before splitting your spend across two lines. A custom category with no money
+against it anywhere can be removed.
 
 ## Holiday data
 

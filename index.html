@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>The Runway — Family Travel Budget</title>
+<title>Runway — Family Travel Budget</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#EEF2F6">
 <meta name="description" content="Offline-first planner for family travel and an annual travel budget.">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="The Runway">
+<meta name="apple-mobile-web-app-title" content="Runway">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
@@ -169,9 +169,21 @@ input.num-in{font-family:var(--mono); font-variant-numeric:tabular-nums}
 .stats div .label{font-size:9.5px}
 .stats div .v{font-family:var(--mono); font-weight:700; font-size:15px; color:var(--ink); margin-top:3px}
 
-/* points */
-.pts-total{display:flex; align-items:baseline; justify-content:space-between; margin-top:10px; border-top:1px solid var(--line); padding-top:10px}
-.pts-total .v{font-family:var(--mono); font-weight:700; font-size:20px; color:var(--ink)}
+/* month-by-month bars */
+.mwrap{margin-top:12px; border-top:1px solid var(--line); padding-top:11px}
+.mchart{display:flex; align-items:flex-end; gap:2px; height:104px; position:relative}
+.mcol{
+  flex:1; display:flex; flex-direction:column; justify-content:flex-end; gap:2px; height:100%;
+  appearance:none; background:transparent; border:0; padding:0; cursor:pointer; border-radius:4px;
+}
+.mcol i{display:block; width:74%; margin:0 auto; border-radius:2px}
+.mcol i.top{border-radius:4px 4px 2px 2px}
+.mcol.is-sel{outline:2px solid var(--ink); outline-offset:2px}
+.mpace{position:absolute; left:0; right:0; height:0; border-top:1px dashed #A9B6C4; pointer-events:none}
+.mlabels{display:flex; gap:2px; margin-top:5px}
+.mlabels span{flex:1; text-align:center; font-family:var(--mono); font-size:9.5px; color:var(--muted)}
+.mread{margin:8px 0 0}
+.mread b{color:var(--ink)}
 
 /* ---------- calendar ---------- */
 .cal-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px}
@@ -192,6 +204,39 @@ input.num-in{font-family:var(--mono); font-variant-numeric:tabular-nums}
 .dots{position:absolute; left:0; right:0; bottom:5px; display:flex; gap:3px; justify-content:center}
 .dots i{width:5px; height:5px; border-radius:99px; display:block}
 .d-es{background:var(--es)} .d-se{background:var(--se)} .d-tr{background:var(--trip)}
+/* year heatmap */
+.ygrid{display:grid; grid-template-columns:26px repeat(31, 1fr); gap:1px; align-items:center}
+.yhead{font-family:var(--mono); font-size:8px; color:var(--muted); text-align:center}
+.ycorner{display:block}
+.ymon{
+  appearance:none; border:0; background:transparent; padding:0; cursor:pointer;
+  font-family:var(--mono); font-size:9.5px; color:var(--muted); text-align:left;
+}
+.ycell{
+  appearance:none; border:0; padding:0; cursor:pointer; aspect-ratio:1; min-height:9px;
+  background:#fff; border-radius:2px; box-shadow:inset 0 0 0 1px var(--line); position:relative;
+}
+.ycell.off{background:var(--paper)}
+.ycell.out{background:transparent; box-shadow:none; cursor:default}
+.ycell.tr:after{content:""; position:absolute; left:1px; right:1px; bottom:1px; height:2px; background:var(--trip); border-radius:2px}
+.ycell.today{box-shadow:inset 0 0 0 1.5px var(--ink)}
+.ycell.sel{box-shadow:inset 0 0 0 2px var(--ink)}
+
+/* week list */
+.wlist{display:flex; flex-direction:column; gap:6px}
+.wday{
+  display:flex; gap:10px; width:100%; text-align:left; appearance:none; cursor:pointer;
+  background:#fff; border:1px solid var(--line); border-radius:11px; padding:9px 11px;
+}
+.wday.off{background:var(--paper)}
+.wday.today{border-color:var(--ink)}
+.wday:active{background:var(--paper)}
+.wdate{flex:0 0 34px; text-align:center}
+.wdate b{display:block; font-family:var(--mono); font-weight:700; font-size:17px; color:var(--ink); line-height:1.1}
+.wdate small{font-family:var(--mono); font-size:9.5px; color:var(--muted)}
+.wbody{flex:1; min-width:0}
+.wquiet{font-size:12.5px; color:var(--muted)}
+
 .daycard{background:var(--paper); border:1px solid var(--line); border-radius:12px; padding:11px 12px; margin-top:11px}
 .daycard h4{margin:0 0 6px; font-family:var(--display); font-size:15px; color:var(--ink)}
 .ev{display:flex; gap:8px; align-items:flex-start; padding:4px 0; font-size:13.5px}
@@ -226,7 +271,6 @@ input.num-in{font-family:var(--mono); font-variant-numeric:tabular-nums}
   border:1px solid var(--line); border-radius:99px; padding:2px 7px; color:var(--muted);
 }
 .tag.s-Idea{color:var(--muted)}
-.tag.s-Planned{color:var(--se); border-color:#C3D6EA}
 .tag.s-Booked{color:var(--go); border-color:#B7E0CD}
 .tag.s-Done{color:#8A94A0; background:var(--paper)}
 .trip-body{border-top:1px solid var(--line); padding:12px; background:#FCFDFE}
@@ -243,6 +287,32 @@ input.num-in{font-family:var(--mono); font-variant-numeric:tabular-nums}
 .cat-in label{font-size:12px; color:var(--muted); flex:1}
 .cat-in input{border:0; padding:0; text-align:right; width:74px; font-family:var(--mono); background:transparent}
 .cat-in input:focus{outline:0}
+.chips{display:flex; flex-wrap:wrap; gap:6px; align-items:center; min-height:24px}
+.chip{
+  appearance:none; display:inline-flex; align-items:center; gap:6px; cursor:pointer;
+  background:var(--paper); border:1px solid var(--line); border-radius:99px;
+  padding:5px 9px; font-size:13px; color:var(--text);
+}
+.chip .x{color:var(--muted); font-size:15px; line-height:1}
+.cpick{margin-top:8px; border:1px solid var(--line); border-radius:11px; padding:8px; background:var(--paper)}
+.clist{max-height:210px; overflow:auto; margin-top:7px; background:#fff; border:1px solid var(--line); border-radius:9px}
+.crow{
+  display:flex; align-items:center; gap:9px; width:100%; text-align:left; appearance:none;
+  background:transparent; border:0; border-bottom:1px solid var(--line); padding:9px 10px;
+  font-size:14px; color:var(--text); cursor:pointer;
+}
+.crow:last-child{border-bottom:0}
+.crow.on{background:#F2F7FB}
+.crow:active{background:var(--paper)}
+.cflag{font-size:16px; line-height:1; flex:0 0 auto}
+.cname{flex:1; min-width:0}
+.ctick{color:var(--go); font-weight:700; flex:0 0 auto}
+.catx{
+  appearance:none; border:0; background:transparent; color:var(--muted); cursor:pointer;
+  font-size:16px; line-height:1; padding:0 0 0 6px; flex:0 0 auto;
+}
+.newcat{display:flex; gap:6px; align-items:center; margin-top:8px}
+.newcat input{flex:1}
 .form-total{
   display:flex; justify-content:space-between; align-items:baseline; margin-top:11px;
   border-top:1px solid var(--line); padding-top:10px;
@@ -283,7 +353,7 @@ input.num-in{font-family:var(--mono); font-variant-numeric:tabular-nums}
 <div class="app">
   <header class="topbar">
     <div class="eyebrow">Family travel · budget</div>
-    <h1 class="brand">The Runway</h1>
+    <h1 class="brand">Runway</h1>
   </header>
 
   <nav class="tabs" role="tablist" aria-label="Sections">
@@ -318,7 +388,8 @@ var PLANNING_YEAR = 2026;
 var CURRENCIES = { EUR: "€", USD: "$", GBP: "£" };
 var DEFAULT_CURRENCY = "EUR";
 
-var CATS = [
+/* Seed categories. Users add their own; the live list lives in state.categories. */
+var DEFAULT_CATS = [
   { k: "flights",    label: "Flights",    c: "#2E6DB4" },
   { k: "lodging",    label: "Lodging",    c: "#1F9D6B" },
   { k: "food",       label: "Food",       c: "#E0A526" },
@@ -327,12 +398,66 @@ var CATS = [
   { k: "other",      label: "Other",      c: "#8A94A0" }
 ];
 
-var TYPES = ["Weekend", "Big trip", "Other"];
-var STATUSES = ["Idea", "Planned", "Booked", "Done"];
+/* Fixed order, never cycled: a new category takes the next unused hue. */
+var CAT_PALETTE = [
+  "#2E6DB4", "#1F9D6B", "#E0A526", "#7B61C9", "#E07A5F", "#8A94A0",
+  "#3E8F8C", "#B4569B", "#6B8E23", "#C2603C", "#4A6FA5", "#9A7B4F"
+];
+
+var STATUSES = ["Idea", "Booked", "Done"];
+
+/* ISO 3166-1 alpha-2 + name. The flag is derived from the code. */
+var COUNTRIES = ("AD Andorra|AE United Arab Emirates|AF Afghanistan|AG Antigua and Barbuda|AI Anguilla|AL Albania|" +
+"AM Armenia|AO Angola|AR Argentina|AT Austria|AU Australia|AW Aruba|AZ Azerbaijan|BA Bosnia and Herzegovina|" +
+"BB Barbados|BD Bangladesh|BE Belgium|BF Burkina Faso|BG Bulgaria|BH Bahrain|BI Burundi|BJ Benin|BM Bermuda|" +
+"BN Brunei|BO Bolivia|BR Brazil|BS Bahamas|BT Bhutan|BW Botswana|BY Belarus|BZ Belize|CA Canada|CD DR Congo|" +
+"CF Central African Republic|CG Congo|CH Switzerland|CI Côte d\u2019Ivoire|CL Chile|CM Cameroon|CN China|CO Colombia|" +
+"CR Costa Rica|CU Cuba|CV Cabo Verde|CW Curaçao|CY Cyprus|CZ Czechia|DE Germany|DJ Djibouti|DK Denmark|" +
+"DM Dominica|DO Dominican Republic|DZ Algeria|EC Ecuador|EE Estonia|EG Egypt|ER Eritrea|ES Spain|ET Ethiopia|" +
+"FI Finland|FJ Fiji|FK Falkland Islands|FM Micronesia|FO Faroe Islands|FR France|GA Gabon|GB United Kingdom|" +
+"GD Grenada|GE Georgia|GF French Guiana|GG Guernsey|GH Ghana|GI Gibraltar|GL Greenland|GM Gambia|GN Guinea|" +
+"GP Guadeloupe|GQ Equatorial Guinea|GR Greece|GT Guatemala|GU Guam|GW Guinea-Bissau|GY Guyana|HK Hong Kong|" +
+"HN Honduras|HR Croatia|HT Haiti|HU Hungary|ID Indonesia|IE Ireland|IL Israel|IM Isle of Man|IN India|IQ Iraq|" +
+"IR Iran|IS Iceland|IT Italy|JE Jersey|JM Jamaica|JO Jordan|JP Japan|KE Kenya|KG Kyrgyzstan|KH Cambodia|" +
+"KI Kiribati|KM Comoros|KN Saint Kitts and Nevis|KP North Korea|KR South Korea|KW Kuwait|KY Cayman Islands|" +
+"KZ Kazakhstan|LA Laos|LB Lebanon|LC Saint Lucia|LI Liechtenstein|LK Sri Lanka|LR Liberia|LS Lesotho|" +
+"LT Lithuania|LU Luxembourg|LV Latvia|LY Libya|MA Morocco|MC Monaco|MD Moldova|ME Montenegro|MG Madagascar|" +
+"MH Marshall Islands|MK North Macedonia|ML Mali|MM Myanmar|MN Mongolia|MO Macao|MQ Martinique|MR Mauritania|" +
+"MT Malta|MU Mauritius|MV Maldives|MW Malawi|MX Mexico|MY Malaysia|MZ Mozambique|NA Namibia|NC New Caledonia|" +
+"NE Niger|NG Nigeria|NI Nicaragua|NL Netherlands|NO Norway|NP Nepal|NR Nauru|NZ New Zealand|OM Oman|PA Panama|" +
+"PE Peru|PF French Polynesia|PG Papua New Guinea|PH Philippines|PK Pakistan|PL Poland|PR Puerto Rico|" +
+"PS Palestine|PT Portugal|PW Palau|PY Paraguay|QA Qatar|RE Réunion|RO Romania|RS Serbia|RU Russia|RW Rwanda|" +
+"SA Saudi Arabia|SB Solomon Islands|SC Seychelles|SD Sudan|SE Sweden|SG Singapore|SI Slovenia|SK Slovakia|" +
+"SL Sierra Leone|SM San Marino|SN Senegal|SO Somalia|SR Suriname|SS South Sudan|ST São Tomé and Príncipe|" +
+"SV El Salvador|SY Syria|SZ Eswatini|TC Turks and Caicos|TD Chad|TG Togo|TH Thailand|TJ Tajikistan|" +
+"TL Timor-Leste|TM Turkmenistan|TN Tunisia|TO Tonga|TR Türkiye|TT Trinidad and Tobago|TV Tuvalu|TW Taiwan|" +
+"TZ Tanzania|UA Ukraine|UG Uganda|US United States|UY Uruguay|UZ Uzbekistan|VA Vatican City|" +
+"VC Saint Vincent and the Grenadines|VE Venezuela|VG British Virgin Islands|VI U.S. Virgin Islands|VN Vietnam|" +
+"VU Vanuatu|WS Samoa|XK Kosovo|YE Yemen|ZA South Africa|ZM Zambia|ZW Zimbabwe").split("|");
+
+var COUNTRY_NAME = {};
+(function () {
+  for (var i = 0; i < COUNTRIES.length; i++) {
+    var row = COUNTRIES[i];
+    COUNTRY_NAME[row.slice(0, 2)] = row.slice(3);
+  }
+})();
+
+function flagOf(code) {
+  if (!/^[A-Z]{2}$/.test(code)) return "";
+  return String.fromCodePoint(0x1F1E6 + code.charCodeAt(0) - 65) +
+         String.fromCodePoint(0x1F1E6 + code.charCodeAt(1) - 65);
+}
+
+function countryLabel(code) {
+  var n = COUNTRY_NAME[code];
+  return n ? flagOf(code) + " " + n : code;
+}
 
 var MONTHS = ["January","February","March","April","May","June",
               "July","August","September","October","November","December"];
 var MON_SHORT = ["J","F","M","A","M","J","J","A","S","O","N","D"];
+var MON_ABBR = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 var DOW = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 
 /* Baked-in 2026 holiday calendar. k: national | regional | local | observance */
@@ -464,17 +589,89 @@ function uid() {
    State + persistence
    ========================================================================= */
 
+/* --- category helpers --------------------------------------------------- */
+
+/* Normalised comparison key: accent-free, lowercase, alphanumeric, de-pluralised. */
+function catKey(label) {
+  var s2 = String(label == null ? "" : label);
+  if (s2.normalize) s2 = s2.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  s2 = s2.toLowerCase().replace(/[^a-z0-9]+/g, "");
+  if (s2.length > 3 && s2.charAt(s2.length - 1) === "s") s2 = s2.slice(0, -1);
+  return s2;
+}
+
+function titleise(k) {
+  var s2 = String(k).replace(/[_-]+/g, " ").trim();
+  return s2 ? s2.charAt(0).toUpperCase() + s2.slice(1) : s2;
+}
+
+function nextCatColour(list) {
+  for (var i = 0; i < CAT_PALETTE.length; i++) {
+    var used = false;
+    for (var j = 0; j < list.length; j++) if (list[j].c === CAT_PALETTE[i]) used = true;
+    if (!used) return CAT_PALETTE[i];
+  }
+  return CAT_PALETTE[list.length % CAT_PALETTE.length];
+}
+
+/* Edit distance, capped — used to catch near-duplicate category names. */
+function editDistance(a, b) {
+  if (a === b) return 0;
+  if (!a.length || !b.length) return Math.max(a.length, b.length);
+  var prev = [], cur = [], i, j;
+  for (j = 0; j <= b.length; j++) prev[j] = j;
+  for (i = 1; i <= a.length; i++) {
+    cur[0] = i;
+    for (j = 1; j <= b.length; j++) {
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1,
+                        prev[j - 1] + (a.charAt(i - 1) === b.charAt(j - 1) ? 0 : 1));
+    }
+    for (j = 0; j <= b.length; j++) prev[j] = cur[j];
+  }
+  return prev[b.length];
+}
+
+function matchCountry(text) {
+  var q = String(text).trim();
+  if (!q) return null;
+  var up = q.toUpperCase();
+  if (COUNTRY_NAME[up]) return up;
+  var low = q.toLowerCase();
+  for (var code in COUNTRY_NAME) {
+    if (!Object.prototype.hasOwnProperty.call(COUNTRY_NAME, code)) continue;
+    if (COUNTRY_NAME[code].toLowerCase() === low) return code;
+  }
+  return null;
+}
+
+/* The live category list. Never mutate the seed array. */
+function cats() { return state.categories; }
+
+function catByKey(k) {
+  var c = cats();
+  for (var i = 0; i < c.length; i++) if (c[i].k === k) return c[i];
+  return null;
+}
+
 function emptyBreakdown() {
-  var b = {};
-  for (var i = 0; i < CATS.length; i++) b[CATS[i].k] = 0;
+  var b = {}, c = cats();
+  for (var i = 0; i < c.length; i++) b[c[i].k] = 0;
   return b;
+}
+
+function seedCats() {
+  var out = [];
+  for (var i = 0; i < DEFAULT_CATS.length; i++) {
+    out.push({ k: DEFAULT_CATS[i].k, label: DEFAULT_CATS[i].label, c: DEFAULT_CATS[i].c, custom: false });
+  }
+  return out;
 }
 
 function defaultState() {
   return {
     budgetByYear: {},
     currency: DEFAULT_CURRENCY,
-    points: { avios: 0, revolut: 0 },
+    categories: seedCats(),
     trips: []
   };
 }
@@ -484,12 +681,19 @@ var state = defaultState();
 var ui = {
   tab: "dash",
   year: new Date().getFullYear(),
+  paceMonth: null,        /* month selected in the month-by-month chart */
   calYear: PLANNING_YEAR,
   calMonth: 0,
+  calView: "month",       /* year | month | week */
+  weekStart: "",          /* ISO Monday of the shown week */
   selDay: "",
   lens: "both",           /* both | ES | SE */
-  editingId: null,        /* trip id being edited, or null */
+  draft: null,            /* the trip being edited/created */
   formOpen: false,
+  countryOpen: false,
+  countryQuery: "",
+  newCatOpen: false,
+  newCatText: "",
   openTrip: null,         /* expanded trip id */
   storageOK: true
 };
@@ -511,40 +715,87 @@ function migrate(raw) {
 
   if (raw.currency && CURRENCIES[raw.currency]) s.currency = raw.currency;
 
-  if (raw.points && typeof raw.points === "object") {
-    s.points.avios = num(raw.points.avios);
-    s.points.revolut = num(raw.points.revolut);
+  /* categories: keep user-made ones, always keep the seeds */
+  if (raw.categories && Object.prototype.toString.call(raw.categories) === "[object Array]") {
+    for (var ci = 0; ci < raw.categories.length; ci++) {
+      var rc = raw.categories[ci] || {};
+      /* identity is the stored key verbatim — catKey() is only ever used to
+         compare human names, and would fold "flights" into "flight" here */
+      var key = String(rc.k || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+      if (!key) key = catKey(String(rc.label || ""));
+      if (!key) continue;
+      var known = false;
+      for (var si = 0; si < s.categories.length; si++) if (s.categories[si].k === key) known = true;
+      if (known) continue;
+      s.categories.push({
+        k: key,
+        label: String(rc.label || key),
+        c: /^#[0-9A-Fa-f]{6}$/.test(rc.c || "") ? rc.c : nextCatColour(s.categories),
+        custom: true
+      });
+    }
   }
 
   var trips = raw.trips;
   if (!trips || Object.prototype.toString.call(trips) !== "[object Array]") trips = [];
   for (var i = 0; i < trips.length; i++) {
     var t = trips[i] || {};
-    var b = emptyBreakdown();
     var src = (t.breakdown && typeof t.breakdown === "object") ? t.breakdown : {};
-    var seen = false;
-    for (var c = 0; c < CATS.length; c++) {
-      var k = CATS[c].k;
+
+    /* any breakdown key we do not know yet becomes a category, so no money
+       is silently dropped when restoring a file from another device */
+    for (var sk in src) {
+      if (!Object.prototype.hasOwnProperty.call(src, sk)) continue;
+      var known2 = false;
+      for (var kj = 0; kj < s.categories.length; kj++) if (s.categories[kj].k === sk) known2 = true;
+      if (!known2 && num(src[sk]) !== 0) {
+        s.categories.push({ k: sk, label: titleise(sk), c: nextCatColour(s.categories), custom: true });
+      }
+    }
+
+    var b = {}, seen = false;
+    for (var c = 0; c < s.categories.length; c++) {
+      var k = s.categories[c].k;
       if (src[k] != null) seen = true;
       b[k] = num(src[k]);
     }
     /* a legacy flat cost lands in "other" so nothing is lost */
     if (!seen && t.cost != null) b.other = num(t.cost);
 
+    /* countries: an array of codes, or an older free-text "place" */
+    var codes = [];
+    var rawC = t.countries;
+    if (Object.prototype.toString.call(rawC) === "[object Array]") {
+      for (var q = 0; q < rawC.length; q++) {
+        var cc = String(rawC[q] || "").toUpperCase();
+        if (COUNTRY_NAME[cc] && codes.indexOf(cc) < 0) codes.push(cc);
+      }
+    }
+    var notes = String(t.notes == null ? "" : t.notes);
+    if (!codes.length && t.place) {
+      var guess = matchCountry(String(t.place));
+      if (guess) codes.push(guess);
+      else notes = (String(t.place) + (notes ? "\n" + notes : ""));   /* keep the text rather than lose it */
+    }
+
+    /* "Planned" retired: it never meant money was committed, so it lands on Idea */
+    var status = STATUSES.indexOf(t.status) >= 0 ? t.status : (t.status === "Planned" ? "Idea" : STATUSES[0]);
+
     s.trips.push({
       id: t.id ? String(t.id) : uid(),
       name: String(t.name == null ? "" : t.name),
-      place: String(t.place == null ? "" : t.place),
+      countries: codes,
       start: /^\d{4}-\d{2}-\d{2}$/.test(t.start || "") ? t.start : "",
       end: /^\d{4}-\d{2}-\d{2}$/.test(t.end || "") ? t.end : "",
-      type: TYPES.indexOf(t.type) >= 0 ? t.type : TYPES[0],
-      status: STATUSES.indexOf(t.status) >= 0 ? t.status : STATUSES[0],
-      notes: String(t.notes == null ? "" : t.notes),
+      status: status,
+      notes: notes,
       breakdown: b
     });
   }
   return s;
 }
+
+var loadedRaw = null;
 
 function load() {
   var raw = null;
@@ -553,6 +804,7 @@ function load() {
   } catch (e) {
     ui.storageOK = false;
   }
+  loadedRaw = raw;
   if (raw) {
     try { state = migrate(JSON.parse(raw)); }
     catch (e2) { state = defaultState(); }
@@ -577,7 +829,8 @@ function save() {
 
 function tripTotal(t) {
   var s = 0;
-  for (var i = 0; i < CATS.length; i++) s += num(t.breakdown[CATS[i].k]);
+  var c = cats();
+  for (var i = 0; i < c.length; i++) s += num(t.breakdown[c[i].k]);
   return s;
 }
 
@@ -724,6 +977,98 @@ function nudgeFor(st) {
          '<span class="dot" style="background:' + color + '"></span><span>' + esc(msg) + "</span></div>";
 }
 
+function monthly(y) {
+  var spent = [], planned = [], i;
+  for (i = 0; i < 12; i++) { spent.push(0); planned.push(0); }
+  var undated = { spent: 0, planned: 0 };
+
+  var trips = tripsForYear(y);
+  for (i = 0; i < trips.length; i++) {
+    var t = trips[i], tot = tripTotal(t);
+    if (tot === 0) continue;
+    var d = parseISO(t.start);
+    var done = t.status === "Done";
+    if (!d) { if (done) undated.spent += tot; else undated.planned += tot; continue; }
+    if (done) spent[d.getMonth()] += tot; else planned[d.getMonth()] += tot;
+  }
+
+  var max = 0;
+  for (i = 0; i < 12; i++) max = Math.max(max, spent[i] + planned[i]);
+  return { spent: spent, planned: planned, undated: undated, max: max };
+}
+
+/* Stacked bars, one column per month. Values are read by tapping a column
+   rather than printed on every bar. */
+function monthChart(y) {
+  var m = monthly(y);
+  var budget = budgetFor(y);
+  var H = 104;
+  var scaleMax = Math.max(m.max, budget > 0 ? budget / 12 : 0);
+
+  var bars = "";
+  for (var i = 0; i < 12; i++) {
+    var sp = m.spent[i], pl = m.planned[i], tot = sp + pl;
+    var segs = "";
+    if (scaleMax > 0) {
+      /* planned sits on top of spent; the top segment carries the rounded end */
+      if (pl > 0) {
+        segs += '<i class="top" style="height:' + Math.max(3, pl / scaleMax * H) +
+                'px;background:var(--alloc)"></i>';
+      }
+      if (sp > 0) {
+        segs += '<i' + (pl > 0 ? "" : ' class="top"') + ' style="height:' + Math.max(3, sp / scaleMax * H) +
+                'px;background:var(--spent)"></i>';
+      }
+    }
+    bars += '<button class="mcol' + (ui.paceMonth === i ? " is-sel" : "") + '" data-act="pace-month" data-v="' + i +
+            '" aria-label="' + MONTHS[i] + " " + money(tot) + '">' + segs + "</button>";
+  }
+
+  var labels = "";
+  for (var L = 0; L < 12; L++) labels += "<span>" + MON_SHORT[L] + "</span>";
+
+  var evenLine = "";
+  if (budget > 0 && scaleMax > 0) {
+    var atPx = (budget / 12) / scaleMax * H;
+    evenLine = '<span class="mpace" style="bottom:' + atPx + 'px"></span>';
+  }
+
+  var read;
+  if (ui.paceMonth != null) {
+    var i2 = ui.paceMonth;
+    read = "<b>" + MONTHS[i2] + "</b> · " + money(m.spent[i2] + m.planned[i2]) +
+           " (" + money(m.spent[i2]) + " spent, " + money(m.planned[i2]) + " planned)";
+  } else if (m.max === 0) {
+    read = "No dated trips in " + y + " yet.";
+  } else {
+    read = "Tap a month for its figures." +
+           (budget > 0 ? " The dashed line is an even " + money(budget / 12) + " a month." : "");
+  }
+
+  var undatedNote = "";
+  if (m.undated.spent + m.undated.planned > 0) {
+    undatedNote = '<p class="hint" style="margin:6px 0 0">' + money(m.undated.spent + m.undated.planned) +
+      " sits on trips with no start date, so it isn\u2019t in any column.</p>";
+  }
+
+  return '<div class="mwrap">' +
+    '<div class="card-head" style="margin:0 0 2px"><span class="label">Month by month</span></div>' +
+    '<div class="legend" style="margin-bottom:4px">' +
+      '<span><b style="background:var(--spent)"></b>Spent <em>' + money(m.undated.spent + sum(m.spent)) + "</em></span>" +
+      '<span><b style="background:var(--alloc)"></b>Planned <em>' + money(m.undated.planned + sum(m.planned)) + "</em></span>" +
+    "</div>" +
+    '<div class="mchart">' + evenLine + bars + "</div>" +
+    '<div class="mlabels">' + labels + "</div>" +
+    '<p class="hint mread">' + read + "</p>" + undatedNote +
+  "</div>";
+}
+
+function sum(arr) {
+  var s2 = 0;
+  for (var i = 0; i < arr.length; i++) s2 += arr[i];
+  return s2;
+}
+
 function pacePanel(y) {
   var p = pacing(y);
   var color = TONE_COLOR[p.tone];
@@ -735,7 +1080,7 @@ function pacePanel(y) {
   var marker = p.phase === "current"
     ? '<span class="pace-now" style="left:' + (p.elapsed * 100) + '%" title="today"></span>' : "";
 
-  var perMonth = p.perMonth == null ? "—"
+  var perMonth = p.perMonth == null ? "\u2014"
     : (p.st.free < 0 ? money(0) : money(p.perMonth));
 
   return '<div class="card">' +
@@ -749,11 +1094,13 @@ function pacePanel(y) {
     "</div>" +
     '<div class="verdict"><span class="hint">' + esc(p.line) + "</span></div>" +
     '<div class="stats">' +
-      '<div><span class="label">Committed</span><div class="v">' + (p.st.budget > 0 ? pct(p.committed) : "—") + "</div></div>" +
+      '<div><span class="label">Committed</span><div class="v">' + (p.st.budget > 0 ? pct(p.committed) : "\u2014") + "</div></div>" +
       '<div><span class="label">Year gone</span><div class="v">' + pct(p.elapsed) + "</div></div>" +
       '<div><span class="label">Free / month</span><div class="v">' + perMonth + "</div></div>" +
     "</div>" +
+    monthChart(y) +
   "</div>";
+
 }
 
 function renderDash() {
@@ -761,7 +1108,6 @@ function renderDash() {
   var st = yearStats(y);
   var sym = CURRENCIES[state.currency] || CURRENCIES[DEFAULT_CURRENCY];
   var budgetVal = state.budgetByYear[String(y)] == null ? "" : String(state.budgetByYear[String(y)]);
-  var pts = num(state.points.avios) + num(state.points.revolut);
 
   var h = "";
 
@@ -808,22 +1154,6 @@ function renderDash() {
 
   h += nudgeFor(st);
   h += pacePanel(y);
-
-  /* points */
-  h += '<div class="card">' +
-    '<div class="card-head"><span class="label">Points · kept out of the cash budget</span></div>' +
-    '<div class="two">' +
-      '<div class="field"><span class="label">Iberia Avios</span>' +
-        '<input class="num-in" type="text" inputmode="numeric" data-pts="avios" placeholder="0" value="' +
-          esc(state.points.avios ? String(state.points.avios) : "") + '"></div>' +
-      '<div class="field"><span class="label">Revolut</span>' +
-        '<input class="num-in" type="text" inputmode="numeric" data-pts="revolut" placeholder="0" value="' +
-          esc(state.points.revolut ? String(state.points.revolut) : "") + '"></div>' +
-    "</div>" +
-    '<div class="pts-total"><span class="label">Combined</span><span class="v">' + intFmt(pts) + " pts</span></div>" +
-    '<p class="hint" style="margin:8px 0 0">Points sit outside the cash budget on purpose. They stretch furthest on one ' +
-      "high-value long-haul redemption rather than being sprinkled over short hops.</p>" +
-  "</div>";
 
   /* data */
   h += '<div class="card">' +
@@ -958,32 +1288,63 @@ function windows(year, lens) {
   return out;
 }
 
-function renderCal() {
-  var y = ui.calYear, m = ui.calMonth, lens = ui.lens;
-  var today = todayISO();
+function weekStartOf(dt) { return addDays(dt, -dowMon(dt)); }
 
+function dayMarks(dISO, lens) {
+  return {
+    es: (lens === "both" || lens === "ES") && holsOn(dISO, "ES").length > 0,
+    se: (lens === "both" || lens === "SE") && holsOn(dISO, "SE").length > 0,
+    trip: tripsCovering(dISO).length > 0
+  };
+}
+
+/* Year at a glance: 12 rows of days, colour-coded. Weekends stay tinted so the
+   week rhythm is still readable without day-of-week columns. */
+function yearGrid(y, lens) {
+  var h = '<div class="ygrid">';
+  h += '<span class="ycorner"></span>';
+  for (var d = 1; d <= 31; d++) {
+    h += '<span class="yhead">' + (d % 5 === 0 || d === 1 ? d : "") + "</span>";
+  }
+  for (var m = 0; m < 12; m++) {
+    h += '<button class="ymon" data-act="calzoom-m" data-v="' + y + "-" + pad2(m + 1) + '-01">' + MON_ABBR[m] + "</button>";
+    for (var day = 1; day <= 31; day++) {
+      var dt = new Date(y, m, day);
+      if (dt.getMonth() !== m) { h += '<span class="ycell out"></span>'; continue; }
+      var di = iso(dt);
+      var mk = dayMarks(di, lens);
+      var cls = "ycell";
+      if (offForLens(dt, lens)) cls += " off";
+      if (di === todayISO()) cls += " today";
+      if (di === ui.selDay) cls += " sel";
+      var style = "";
+      if (mk.es && mk.se) style = 'background:linear-gradient(135deg,var(--es) 50%,var(--se) 50%)';
+      else if (mk.es) style = "background:var(--es)";
+      else if (mk.se) style = "background:var(--se)";
+      if (mk.trip) cls += " tr";
+      h += '<button class="' + cls + '" style="' + style + '" data-act="calzoom" data-v="' + di +
+           '" aria-label="' + di + '"></button>';
+    }
+  }
+  h += "</div>";
+  h += '<div class="legend" style="margin-top:9px">' +
+    '<span><b style="background:var(--es)"></b>Spain</span>' +
+    '<span><b style="background:var(--se)"></b>Sweden</span>' +
+    '<span><b style="background:var(--trip)"></b>Your trips</span>' +
+    '<span><b style="background:var(--paper);border:1px solid var(--line)"></b>Weekend / off</span>' +
+  "</div>";
+  return h;
+}
+
+function monthGrid(y, m, lens) {
+  var today = todayISO();
   var first = new Date(y, m, 1);
   var gridStart = addDays(first, -dowMon(first));
 
-  var h = "";
-
-  h += '<div class="card">' +
-    '<div class="cal-head">' +
-      '<button class="stepper" data-act="month" data-v="-1" aria-label="Previous month">‹</button>' +
-      '<span class="cal-title">' + MONTHS[m] + " " + y + "</span>" +
-      '<button class="stepper" data-act="month" data-v="1" aria-label="Next month">›</button>' +
-    "</div>" +
-    '<div class="seg" style="margin-bottom:11px">' +
-      '<button data-act="lens" data-v="both"' + (lens === "both" ? ' class="is-on"' : "") + ">Both</button>" +
-      '<button data-act="lens" data-v="ES"' + (lens === "ES" ? ' class="is-on"' : "") + ">Spain</button>" +
-      '<button data-act="lens" data-v="SE"' + (lens === "SE" ? ' class="is-on"' : "") + ">Sweden</button>" +
-    "</div>";
-
-  h += '<div class="dow">';
+  var h = '<div class="dow">';
   for (var i = 0; i < 7; i++) h += "<span>" + DOW[i].charAt(0) + "</span>";
-  h += "</div>";
+  h += '</div><div class="grid">';
 
-  h += '<div class="grid">';
   for (var c = 0; c < 42; c++) {
     var dt = addDays(gridStart, c);
     var di = iso(dt);
@@ -993,43 +1354,110 @@ function renderCal() {
     if (di === today) cls += " today";
     if (di === ui.selDay) cls += " sel";
 
+    var mk = dayMarks(di, lens);
     var dots = "";
-    if ((lens === "both" || lens === "ES") && holsOn(di, "ES").length) dots += '<i class="d-es"></i>';
-    if ((lens === "both" || lens === "SE") && holsOn(di, "SE").length) dots += '<i class="d-se"></i>';
-    if (tripsCovering(di).length) dots += '<i class="d-tr"></i>';
+    if (mk.es) dots += '<i class="d-es"></i>';
+    if (mk.se) dots += '<i class="d-se"></i>';
+    if (mk.trip) dots += '<i class="d-tr"></i>';
 
     h += '<button class="' + cls + '" data-act="day" data-v="' + di + '">' + dt.getDate() +
          (dots ? '<span class="dots">' + dots + "</span>" : "") + "</button>";
   }
-  h += "</div>";
+  return h + "</div>";
+}
 
-  /* selected day detail */
-  if (ui.selDay) {
-    var sd = parseISO(ui.selDay);
-    var hs = HOL_BY_DAY[ui.selDay] || [];
-    var tps = tripsCovering(ui.selDay);
+function weekList(startISO, lens) {
+  var start = parseISO(startISO) || weekStartOf(new Date());
+  var h = '<div class="wlist">';
+  for (var i = 0; i < 7; i++) {
+    var dt = addDays(start, i);
+    var di = iso(dt);
+    var hs = HOL_BY_DAY[di] || [];
+    var tps = tripsCovering(di);
+
     var body = "";
     for (var k = 0; k < hs.length; k++) {
       if (lens !== "both" && hs[k].c !== lens) continue;
       body += '<div class="ev"><i class="' + (hs[k].c === "ES" ? "d-es" : "d-se") + '"></i><span>' +
-        esc(hs[k].n) + "<br><small>" + (hs[k].c === "ES" ? "Spain" : "Sweden") + " · " + esc(hs[k].k) + "</small></span></div>";
+        esc(hs[k].n) + "<br><small>" + (hs[k].c === "ES" ? "Spain" : "Sweden") + " \u00b7 " + esc(hs[k].k) + "</small></span></div>";
     }
-    for (var t2 = 0; t2 < tps.length; t2++) {
-      body += '<div class="ev"><i class="d-tr"></i><span>' + esc(tps[t2].name || "Untitled trip") +
-        "<br><small>" + esc(fmtRange(tps[t2].start, tps[t2].end)) + " · " + esc(tps[t2].status) + "</small></span></div>";
+    for (var t = 0; t < tps.length; t++) {
+      body += '<div class="ev"><i class="d-tr"></i><span>' + esc(tps[t].name || "Untitled trip") +
+        "<br><small>" + esc(fmtRange(tps[t].start, tps[t].end)) + " \u00b7 " + esc(tps[t].status) + "</small></span></div>";
     }
-    if (!body) body = '<p class="empty">Nothing on this day.</p>';
-    h += '<div class="daycard"><h4>' + esc(fmtDay(sd)) + " " + sd.getFullYear() + "</h4>" + body + "</div>";
+    if (!body) body = '<span class="wquiet">' + (offForLens(dt, lens) ? "Off \u00b7 nothing planned" : "Nothing") + "</span>";
+
+    var cls = "wday";
+    if (offForLens(dt, lens)) cls += " off";
+    if (di === todayISO()) cls += " today";
+
+    h += '<button class="' + cls + '" data-act="day" data-v="' + di + '">' +
+      '<span class="wdate"><b>' + dt.getDate() + "</b><small>" + DOW[dowMon(dt)] + "</small></span>" +
+      '<span class="wbody">' + body + "</span></button>";
+  }
+  return h + "</div>";
+}
+
+function calTitle(y, m, view) {
+  if (view === "year") return String(y);
+  if (view === "month") return MONTHS[m] + " " + y;
+  var a = parseISO(ui.weekStart) || new Date(y, m, 1);
+  var b = addDays(a, 6);
+  var am = MONTHS[a.getMonth()].slice(0, 3), bm = MONTHS[b.getMonth()].slice(0, 3);
+  return a.getDate() + (am === bm ? "" : " " + am) + " \u2013 " + b.getDate() + " " + bm + " " + b.getFullYear();
+}
+
+function renderCal() {
+  var y = ui.calYear, m = ui.calMonth, lens = ui.lens, view = ui.calView;
+
+  var h = '<div class="card">' +
+    '<div class="cal-head">' +
+      '<button class="stepper" data-act="calnav" data-v="-1" aria-label="Previous">\u2039</button>' +
+      '<span class="cal-title">' + esc(calTitle(y, m, view)) + "</span>" +
+      '<button class="stepper" data-act="calnav" data-v="1" aria-label="Next">\u203a</button>' +
+    "</div>" +
+    '<div class="seg" style="margin-bottom:8px">' +
+      '<button data-act="calview" data-v="year"' + (view === "year" ? ' class="is-on"' : "") + ">Year</button>" +
+      '<button data-act="calview" data-v="month"' + (view === "month" ? ' class="is-on"' : "") + ">Month</button>" +
+      '<button data-act="calview" data-v="week"' + (view === "week" ? ' class="is-on"' : "") + ">Week</button>" +
+    "</div>" +
+    '<div class="seg" style="margin-bottom:11px">' +
+      '<button data-act="lens" data-v="both"' + (lens === "both" ? ' class="is-on"' : "") + ">Both</button>" +
+      '<button data-act="lens" data-v="ES"' + (lens === "ES" ? ' class="is-on"' : "") + ">Spain</button>" +
+      '<button data-act="lens" data-v="SE"' + (lens === "SE" ? ' class="is-on"' : "") + ">Sweden</button>" +
+    "</div>";
+
+  if (view === "year") h += yearGrid(y, lens);
+  else if (view === "month") h += monthGrid(y, m, lens);
+  else h += weekList(ui.weekStart, lens);
+
+  /* selected day detail (year view zooms instead of expanding inline) */
+  if (ui.selDay && view === "month") {
+    var sd = parseISO(ui.selDay);
+    var hs2 = HOL_BY_DAY[ui.selDay] || [];
+    var tps2 = tripsCovering(ui.selDay);
+    var body2 = "";
+    for (var k2 = 0; k2 < hs2.length; k2++) {
+      if (lens !== "both" && hs2[k2].c !== lens) continue;
+      body2 += '<div class="ev"><i class="' + (hs2[k2].c === "ES" ? "d-es" : "d-se") + '"></i><span>' +
+        esc(hs2[k2].n) + "<br><small>" + (hs2[k2].c === "ES" ? "Spain" : "Sweden") + " \u00b7 " + esc(hs2[k2].k) + "</small></span></div>";
+    }
+    for (var t2 = 0; t2 < tps2.length; t2++) {
+      body2 += '<div class="ev"><i class="d-tr"></i><span>' + esc(tps2[t2].name || "Untitled trip") +
+        "<br><small>" + esc(fmtRange(tps2[t2].start, tps2[t2].end)) + " \u00b7 " + esc(tps2[t2].status) + "</small></span></div>";
+    }
+    if (!body2) body2 = '<p class="empty">Nothing on this day.</p>';
+    h += '<div class="daycard"><h4>' + esc(fmtDay(sd)) + " " + sd.getFullYear() + "</h4>" + body2 + "</div>";
   }
 
-  h += "</div>";  /* end calendar card */
+  h += "</div>";
 
   /* windows */
   var wins = windows(y, lens);
-  var title = lens === "both" ? "Days off in both countries" : "Long weekends · " + (lens === "ES" ? "Spain" : "Sweden");
-  h += '<div class="card"><div class="card-head"><span class="label">' + esc(title) + " · " + y + "</span></div>";
+  var title = lens === "both" ? "Days off in both countries" : "Long weekends \u00b7 " + (lens === "ES" ? "Spain" : "Sweden");
+  h += '<div class="card"><div class="card-head"><span class="label">' + esc(title) + " \u00b7 " + y + "</span></div>";
   if (lens === "both") {
-    h += '<p class="hint" style="margin:0 0 10px">Stretches of three days or more when both calendars are off — the easy ' +
+    h += '<p class="hint" style="margin:0 0 10px">Stretches of three days or more when both calendars are off \u2014 the easy ' +
          "windows for a visit in either direction.</p>";
   } else {
     h += '<p class="hint" style="margin:0 0 10px">Runs of three days or more off, plus single days worth taking as a bridge.</p>';
@@ -1041,7 +1469,7 @@ function renderCal() {
       var win = wins[w];
       h += '<button class="win' + (win.kind === "bridge" ? " bridge" : "") + '" data-act="jump" data-v="' + win.start + '">' +
         '<span class="t"><span class="dates">' + esc(fmtRange(win.start, win.end)) + "</span>" +
-        '<span class="len">' + win.len + " days" + (win.kind === "bridge" ? " · bridge" : "") + "</span></span>" +
+        '<span class="len">' + win.len + " days" + (win.kind === "bridge" ? " \u00b7 bridge" : "") + "</span></span>" +
         '<span class="why">' + esc(win.why) + "</span></button>";
     }
   }
@@ -1056,8 +1484,8 @@ function renderCal() {
 
 function blankTrip() {
   return {
-    id: "", name: "", place: "", start: "", end: "",
-    type: TYPES[0], status: STATUSES[0], notes: "", breakdown: emptyBreakdown()
+    id: uid(), name: "", countries: [], start: "", end: "",
+    status: STATUSES[0], notes: "", breakdown: emptyBreakdown()
   };
 }
 
@@ -1066,18 +1494,63 @@ function tripById(id) {
   return null;
 }
 
+function optList(arr, sel) {
+  var h = "";
+  for (var i = 0; i < arr.length; i++) {
+    h += '<option value="' + esc(arr[i]) + '"' + (arr[i] === sel ? " selected" : "") + ">" + esc(arr[i]) + "</option>";
+  }
+  return h;
+}
+
+/* --- country multiselect ------------------------------------------------ */
+
+function countryPicker(selected) {
+  var q = (ui.countryQuery || "").trim().toLowerCase();
+
+  var chips = "";
+  for (var i = 0; i < selected.length; i++) {
+    chips += '<button class="chip" data-act="country-off" data-v="' + esc(selected[i]) + '">' +
+      esc(countryLabel(selected[i])) + '<span class="x">\u00d7</span></button>';
+  }
+  if (!chips) chips = '<span class="hint">No countries yet.</span>';
+
+  var body = "";
+  if (ui.countryOpen) {
+    var rows = "", shown = 0;
+    for (var c = 0; c < COUNTRIES.length; c++) {
+      var code = COUNTRIES[c].slice(0, 2), name = COUNTRIES[c].slice(3);
+      if (q && name.toLowerCase().indexOf(q) < 0 && code.toLowerCase().indexOf(q) < 0) continue;
+      if (shown >= 60) break;
+      shown++;
+      var on = selected.indexOf(code) >= 0;
+      rows += '<button class="crow' + (on ? " on" : "") + '" data-act="country-on" data-v="' + code + '">' +
+        '<span class="cflag">' + flagOf(code) + "</span><span class=\"cname\">" + esc(name) + "</span>" +
+        '<span class="ctick">' + (on ? "\u2713" : "") + "</span></button>";
+    }
+    if (!rows) rows = '<p class="empty">No country matches \u201c' + esc(ui.countryQuery) + '\u201d.</p>';
+    body = '<div class="cpick">' +
+      '<input id="f-country-q" type="text" placeholder="Search countries" autocomplete="off" value="' +
+        esc(ui.countryQuery || "") + '">' +
+      '<div class="clist">' + rows + "</div></div>";
+  }
+
+  return '<div class="field"><span class="label">Countries</span>' +
+    '<div class="chips">' + chips + "</div>" +
+    '<button class="btn small" style="margin-top:7px" data-act="country-toggle">' +
+      (ui.countryOpen ? "Done" : "＋ Add country") + "</button>" +
+    body + "</div>";
+}
+
+/* --- the form ----------------------------------------------------------- */
+
 function tripForm(t) {
   var h = '<div class="card" id="trip-form">' +
-    '<div class="card-head"><span class="label">' + (t.id ? "Edit trip" : "New trip") + "</span></div>";
+    '<div class="card-head"><span class="label">' + (tripById(t.id) ? "Edit trip" : "New trip") + "</span></div>";
 
   h += '<div class="field"><span class="label">Name</span>' +
        '<input id="f-name" type="text" placeholder="Weekend somewhere" value="' + esc(t.name) + '"></div>';
 
-  h += '<div class="two">' +
-    '<div class="field"><span class="label">Where</span>' +
-      '<input id="f-place" type="text" placeholder="MAD, ARN…" value="' + esc(t.place) + '"></div>' +
-    '<div class="field"><span class="label">Type</span><select id="f-type">' + optList(TYPES, t.type) + "</select></div>" +
-  "</div>";
+  h += countryPicker(t.countries || []);
 
   h += '<div class="two">' +
     '<div class="field"><span class="label">Start</span><input id="f-start" type="date" value="' + esc(t.start) + '"></div>' +
@@ -1087,15 +1560,31 @@ function tripForm(t) {
   h += '<div class="field"><span class="label">Status</span><select id="f-status">' + optList(STATUSES, t.status) + "</select></div>";
 
   h += '<div class="field"><span class="label">Budget breakdown</span><div class="cats">';
-  for (var i = 0; i < CATS.length; i++) {
-    var c = CATS[i];
+  var list = cats();
+  for (var i = 0; i < list.length; i++) {
+    var c = list[i];
     var v = num(t.breakdown[c.k]);
     h += '<div class="cat-in"><i style="background:' + c.c + '"></i>' +
-      '<label for="f-' + c.k + '">' + c.label + "</label>" +
+      '<label for="f-' + c.k + '">' + esc(c.label) + "</label>" +
       '<input id="f-' + c.k + '" class="f-cat" data-cat="' + c.k + '" type="text" inputmode="decimal" ' +
-        'placeholder="0" value="' + (v ? esc(String(v)) : "") + '"></div>';
+        'placeholder="0" value="' + (v ? esc(String(v)) : "") + '">' +
+      (c.custom && !catInUse(c.k)
+        ? '<button class="catx" data-act="cat-del" data-v="' + esc(c.k) + '" aria-label="Remove ' + esc(c.label) + '">\u00d7</button>'
+        : "") +
+    "</div>";
   }
-  h += "</div></div>";
+  h += "</div>";
+
+  if (ui.newCatOpen) {
+    h += '<div class="newcat">' +
+      '<input id="f-newcat" type="text" placeholder="Category name" autocomplete="off" value="' +
+        esc(ui.newCatText || "") + '">' +
+      '<button class="btn small primary" data-act="cat-add">Add</button>' +
+      '<button class="btn small" data-act="cat-cancel">Cancel</button></div>';
+  } else {
+    h += '<button class="btn small" style="margin-top:8px" data-act="cat-new">＋ New category</button>';
+  }
+  h += "</div>";
 
   h += '<div class="field"><span class="label">Notes</span>' +
        '<textarea id="f-notes" placeholder="Anything worth remembering">' + esc(t.notes) + "</textarea></div>";
@@ -1110,12 +1599,9 @@ function tripForm(t) {
   return h;
 }
 
-function optList(arr, sel) {
-  var h = "";
-  for (var i = 0; i < arr.length; i++) {
-    h += '<option value="' + esc(arr[i]) + '"' + (arr[i] === sel ? " selected" : "") + ">" + esc(arr[i]) + "</option>";
-  }
-  return h;
+function catInUse(k) {
+  for (var i = 0; i < state.trips.length; i++) if (num(state.trips[i].breakdown[k]) !== 0) return true;
+  return false;
 }
 
 function formTotal() {
@@ -1125,41 +1611,64 @@ function formTotal() {
   return s;
 }
 
+/* Reads the DOM back into the working draft. Countries live in the draft
+   because they are not form inputs. */
 function readForm() {
-  var t = ui.editingId ? tripById(ui.editingId) : null;
+  var d = ui.draft || blankTrip();
+  if (!el("f-name")) return d;
+
   var out = {
-    id: t ? t.id : uid(),
+    id: d.id,
     name: el("f-name").value.trim(),
-    place: el("f-place").value.trim(),
+    countries: (d.countries || []).slice(),
     start: el("f-start").value || "",
     end: el("f-end").value || "",
-    type: el("f-type").value,
     status: el("f-status").value,
     notes: el("f-notes").value,
     breakdown: emptyBreakdown()
   };
-  for (var i = 0; i < CATS.length; i++) out.breakdown[CATS[i].k] = num(el("f-" + CATS[i].k).value);
-  if (out.start && out.end && out.end < out.start) { var s = out.start; out.start = out.end; out.end = s; }
+  var list = cats();
+  for (var i = 0; i < list.length; i++) {
+    var node = el("f-" + list[i].k);
+    out.breakdown[list[i].k] = node ? num(node.value) : num(d.breakdown[list[i].k]);
+  }
+  if (out.start && out.end && out.end < out.start) { var sw = out.start; out.start = out.end; out.end = sw; }
   return out;
 }
+
+/* Re-render the trips view without losing anything typed so far. */
+function refreshForm(focusId) {
+  if (ui.formOpen) ui.draft = readForm();
+  renderTrips();
+  if (focusId) {
+    var n = el(focusId);
+    if (n) { n.focus(); if (n.setSelectionRange) { try { n.setSelectionRange(n.value.length, n.value.length); } catch (e) {} } }
+  }
+}
+
+/* --- cards -------------------------------------------------------------- */
 
 function tripCard(t) {
   var tot = tripTotal(t);
   var open = ui.openTrip === t.id;
+  var list = cats();
 
   var bar = "";
   if (tot > 0) {
-    for (var i = 0; i < CATS.length; i++) {
-      var v = num(t.breakdown[CATS[i].k]);
+    for (var i = 0; i < list.length; i++) {
+      var v = num(t.breakdown[list[i].k]);
       if (v <= 0) continue;
-      bar += '<i style="width:' + (v / tot * 100) + '%;background:' + CATS[i].c + '"></i>';
+      bar += '<i style="width:' + (v / tot * 100) + '%;background:' + list[i].c + '"></i>';
     }
   }
 
   var meta = [];
-  if (t.place) meta.push(esc(t.place));
+  if (t.countries && t.countries.length) {
+    var names = [];
+    for (var q = 0; q < t.countries.length; q++) names.push(countryLabel(t.countries[q]));
+    meta.push(esc(names.join(" · ")));
+  }
   meta.push(esc(fmtRange(t.start, t.end)));
-  meta.push(esc(t.type));
 
   var h = '<div class="trip">' +
     '<button class="trip-top" data-act="trip-open" data-v="' + esc(t.id) + '" aria-expanded="' + (open ? "true" : "false") + '">' +
@@ -1167,20 +1676,20 @@ function tripCard(t) {
         '<span class="grow"><span class="trip-name">' + esc(t.name || "Untitled trip") + "</span>" +
           '<span class="trip-meta">' + meta.join(" · ") + "</span></span>" +
         '<span style="text-align:right"><span class="trip-tot">' + money(tot) + "</span><br>" +
-          '<span class="tag s-' + esc(t.status.replace(/\s+/g, "")) + '">' + esc(t.status) + "</span></span>" +
+          '<span class="tag s-' + esc(t.status) + '">' + esc(t.status) + "</span></span>" +
       "</span>" +
       '<span class="trip-bar">' + bar + "</span>" +
     "</button>";
 
   if (open) {
     h += '<div class="trip-body">';
-    for (var c = 0; c < CATS.length; c++) {
-      var cat = CATS[c], val = num(t.breakdown[cat.k]);
-      var p = tot > 0 ? val / tot : 0;
-      h += '<div class="brk"><span class="k">' + cat.label + "</span>" +
-        '<span class="t"><i style="width:' + (p * 100) + '%;background:' + cat.c + '"></i></span>' +
+    for (var c = 0; c < list.length; c++) {
+      var cat = list[c], val = num(t.breakdown[cat.k]);
+      var pp = tot > 0 ? val / tot : 0;
+      h += '<div class="brk"><span class="k">' + esc(cat.label) + "</span>" +
+        '<span class="t"><i style="width:' + (pp * 100) + '%;background:' + cat.c + '"></i></span>' +
         '<span class="v">' + money(val) + "</span>" +
-        '<span class="p">' + (tot > 0 ? Math.round(p * 100) + "%" : "—") + "</span></div>";
+        '<span class="p">' + (tot > 0 ? Math.round(pp * 100) + "%" : "\u2014") + "</span></div>";
     }
     h += '<div class="brk" style="border-top:1px solid var(--line);margin-top:6px;padding-top:8px">' +
       '<span class="k" style="color:var(--ink);font-weight:600">Total</span><span class="t" style="background:transparent"></span>' +
@@ -1194,8 +1703,7 @@ function tripCard(t) {
     "</div></div>";
   }
 
-  h += "</div>";
-  return h;
+  return h + "</div>";
 }
 
 function renderTrips() {
@@ -1205,13 +1713,11 @@ function renderTrips() {
   var grand = 0;
   for (var g = 0; g < sorted.length; g++) grand += tripTotal(sorted[g]);
 
-  h += '<div class="card"><div class="card-head"><span class="label">Trips · ' + sorted.length +
-       "</span><span class=\"trip-tot\">" + money(grand) + "</span></div>" +
+  h += '<div class="card"><div class="card-head"><span class="label">Trips \u00b7 ' + sorted.length +
+       '</span><span class="trip-tot">' + money(grand) + "</span></div>" +
        '<button class="btn primary" style="width:100%" data-act="trip-new">＋ Add a trip</button></div>';
 
-  if (ui.formOpen) {
-    h += tripForm(ui.editingId ? tripById(ui.editingId) || blankTrip() : (ui.draft || blankTrip()));
-  }
+  if (ui.formOpen) h += tripForm(ui.draft || blankTrip());
 
   if (!sorted.length) {
     h += '<div class="card"><p class="empty" style="margin:0">No trips yet. Add one and it will show up on the dashboard ' +
@@ -1373,7 +1879,7 @@ function applyImported(text, label) {
 function doImport() { el("importer").click(); }
 
 function doReset() {
-  if (!window.confirm("Reset everything?\n\nBudget, points and all trips on this device will be cleared. " +
+  if (!window.confirm("Reset everything?\n\nBudget, categories and all trips on this device will be cleared. " +
                       "This can't be undone — export a backup first if you want to keep it.")) return;
   state = defaultState();
   ui.openTrip = null; ui.formOpen = false; ui.editingId = null; ui.draft = null;
@@ -1531,6 +2037,71 @@ function jumpTo(dISO) {
   ui.tab === "cal" ? render() : setTab("cal");
 }
 
+/* Adds a category, steering away from duplicates of the seeds or of the
+   user's own earlier additions. */
+function addCategory(rawLabel) {
+  var label = String(rawLabel || "").trim().replace(/\s+/g, " ");
+  if (!label) { toast("Name the category first."); return; }
+  if (label.length > 24) { toast("Keep the name under 24 characters."); return; }
+
+  var key = catKey(label);
+  if (!key) { toast("Use some letters or numbers."); return; }
+
+  var list = cats(), i;
+
+  /* exact match once normalised — accents, case, plurals and spacing ignored */
+  for (i = 0; i < list.length; i++) {
+    if (catKey(list[i].label) === key || list[i].k === key) {
+      toast("\u201c" + list[i].label + "\u201d already covers that \u2014 use it instead.");
+      var have = el("f-" + list[i].k);
+      if (have) { have.focus(); have.select && have.select(); }
+      return;
+    }
+  }
+
+  /* near match — a typo or a near-synonym of something already there */
+  for (i = 0; i < list.length; i++) {
+    var other = catKey(list[i].label);
+    var close = editDistance(key, other) <= 2 ||
+                (key.length >= 4 && other.length >= 4 && (key.indexOf(other) === 0 || other.indexOf(key) === 0));
+    if (!close) continue;
+    if (!window.confirm("\u201c" + label + "\u201d looks a lot like your existing \u201c" + list[i].label +
+                        "\u201d.\n\nSplitting them means the same spend lands in two places. Add it anyway?")) {
+      var n = el("f-" + list[i].k);
+      if (n) { n.focus(); n.select && n.select(); }
+      return;
+    }
+    break;
+  }
+
+  var finalKey = key, bump = 2;
+  for (i = 0; i < list.length; i++) {
+    if (list[i].k === finalKey) { finalKey = key + bump; bump++; i = -1; }
+  }
+  key = finalKey;
+  state.categories.push({ k: key, label: label, c: nextCatColour(state.categories), custom: true });
+  for (i = 0; i < state.trips.length; i++) state.trips[i].breakdown[key] = 0;
+  if (ui.draft) ui.draft.breakdown[key] = 0;
+
+  ui.newCatOpen = false;
+  ui.newCatText = "";
+  save();
+  refreshForm("f-" + key);
+  toast("Added " + label + ".");
+}
+
+/* A stored trip may predate a category, so top it up before editing. */
+function migrateTrip(t) {
+  var out = {
+    id: t.id, name: t.name, countries: (t.countries || []).slice(),
+    start: t.start, end: t.end, status: t.status, notes: t.notes,
+    breakdown: emptyBreakdown()
+  };
+  var list = cats();
+  for (var i = 0; i < list.length; i++) out.breakdown[list[i].k] = num(t.breakdown[list[i].k]);
+  return out;
+}
+
 document.addEventListener("click", function (ev) {
   var btn = null;
   var n = ev.target;
@@ -1549,13 +2120,50 @@ document.addEventListener("click", function (ev) {
   switch (act) {
     case "year":
       ui.year += parseInt(v, 10);
+      ui.paceMonth = null;
       render();
       break;
 
-    case "month":
-      ui.calMonth += parseInt(v, 10);
-      if (ui.calMonth < 0) { ui.calMonth = 11; ui.calYear--; }
-      if (ui.calMonth > 11) { ui.calMonth = 0; ui.calYear++; }
+    case "pace-month":
+      var mi = parseInt(v, 10);
+      ui.paceMonth = ui.paceMonth === mi ? null : mi;
+      render();
+      break;
+
+    case "calview":
+      ui.calView = v;
+      if (v === "week" && !ui.weekStart) {
+        ui.weekStart = iso(weekStartOf(parseISO(ui.selDay) || new Date(ui.calYear, ui.calMonth, 1)));
+      }
+      render();
+      break;
+
+    case "calnav":
+      var step = parseInt(v, 10);
+      if (ui.calView === "year") {
+        ui.calYear += step;
+      } else if (ui.calView === "month") {
+        ui.calMonth += step;
+        if (ui.calMonth < 0) { ui.calMonth = 11; ui.calYear--; }
+        if (ui.calMonth > 11) { ui.calMonth = 0; ui.calYear++; }
+      } else {
+        var ws = addDays(parseISO(ui.weekStart) || weekStartOf(new Date()), step * 7);
+        ui.weekStart = iso(ws);
+        ui.calYear = ws.getFullYear();
+        ui.calMonth = ws.getMonth();
+      }
+      render();
+      break;
+
+    case "calzoom":          /* a day cell: zoom in and select it */
+    case "calzoom-m":        /* a month label: zoom in, keep the selection */
+      var zd = parseISO(v);
+      if (!zd) return;
+      ui.calYear = zd.getFullYear();
+      ui.calMonth = zd.getMonth();
+      ui.weekStart = iso(weekStartOf(zd));
+      if (act === "calzoom") ui.selDay = v;
+      ui.calView = "month";
       render();
       break;
 
@@ -1567,7 +2175,10 @@ document.addEventListener("click", function (ev) {
     case "day":
       var d = parseISO(v);
       ui.selDay = (ui.selDay === v) ? "" : v;
-      if (d && d.getMonth() !== ui.calMonth) { ui.calMonth = d.getMonth(); ui.calYear = d.getFullYear(); }
+      if (d && ui.calView === "month" && d.getMonth() !== ui.calMonth) {
+        ui.calMonth = d.getMonth();
+        ui.calYear = d.getFullYear();
+      }
       render();
       break;
 
@@ -1575,41 +2186,108 @@ document.addEventListener("click", function (ev) {
       jumpTo(v);
       break;
 
+    /* ---- countries ---- */
+    case "country-toggle":
+      ui.countryOpen = !ui.countryOpen;
+      ui.countryQuery = "";
+      refreshForm(ui.countryOpen ? "f-country-q" : null);
+      break;
+
+    case "country-on":
+      if (ui.formOpen) {
+        ui.draft = readForm();
+        var have = ui.draft.countries.indexOf(v);
+        if (have >= 0) ui.draft.countries.splice(have, 1);
+        else ui.draft.countries.push(v);
+        renderTrips();
+        var qn = el("f-country-q");
+        if (qn) qn.focus();
+      }
+      break;
+
+    case "country-off":
+      if (ui.formOpen) {
+        ui.draft = readForm();
+        var idx = ui.draft.countries.indexOf(v);
+        if (idx >= 0) ui.draft.countries.splice(idx, 1);
+        renderTrips();
+      }
+      break;
+
+    /* ---- categories ---- */
+    case "cat-new":
+      ui.newCatOpen = true;
+      ui.newCatText = "";
+      refreshForm("f-newcat");
+      break;
+
+    case "cat-cancel":
+      ui.newCatOpen = false;
+      ui.newCatText = "";
+      refreshForm();
+      break;
+
+    case "cat-add":
+      addCategory(el("f-newcat") ? el("f-newcat").value : "");
+      break;
+
+    case "cat-del":
+      var goner = catByKey(v);
+      if (!goner || catInUse(v)) { toast("That category has money in it."); return; }
+      if (!window.confirm("Remove the " + goner.label + " category?")) return;
+      for (var ci = 0; ci < state.categories.length; ci++) {
+        if (state.categories[ci].k === v) { state.categories.splice(ci, 1); break; }
+      }
+      for (var ti = 0; ti < state.trips.length; ti++) delete state.trips[ti].breakdown[v];
+      if (ui.draft) delete ui.draft.breakdown[v];
+      save();
+      refreshForm();
+      toast("Removed " + goner.label + ".");
+      break;
+
+    /* ---- trips ---- */
     case "trip-new":
-      ui.editingId = null; ui.draft = blankTrip(); ui.formOpen = true;
-      render();
+      ui.draft = blankTrip();
+      ui.formOpen = true;
+      ui.countryOpen = false;
+      ui.newCatOpen = false;
+      renderTrips();
       var nameIn = el("f-name"); if (nameIn) nameIn.focus();
       break;
 
     case "trip-cancel":
-      ui.formOpen = false; ui.editingId = null; ui.draft = null;
-      render();
+      ui.formOpen = false; ui.draft = null; ui.countryOpen = false; ui.newCatOpen = false;
+      renderTrips();
       break;
 
     case "trip-save":
       var t = readForm();
       if (!t.name) { toast("Give the trip a name first."); el("f-name").focus(); return; }
-      if (ui.editingId) {
+      var existing = tripById(t.id);
+      if (existing) {
         for (var i = 0; i < state.trips.length; i++) {
-          if (state.trips[i].id === ui.editingId) { state.trips[i] = t; break; }
+          if (state.trips[i].id === t.id) { state.trips[i] = t; break; }
         }
       } else {
         state.trips.push(t);
       }
-      ui.formOpen = false; ui.editingId = null; ui.draft = null;
+      ui.formOpen = false; ui.draft = null; ui.countryOpen = false; ui.newCatOpen = false;
       save();
       render();
-      toast("Saved " + t.name + " · " + money(tripTotal(t)));
+      toast("Saved " + t.name + " \u00b7 " + money(tripTotal(t)));
       break;
 
     case "trip-open":
       ui.openTrip = ui.openTrip === v ? null : v;
-      render();
+      renderTrips();
       break;
 
     case "trip-edit":
-      ui.editingId = v; ui.formOpen = true; ui.openTrip = null;
-      render();
+      var src = tripById(v);
+      if (!src) return;
+      ui.draft = migrateTrip(src);
+      ui.formOpen = true; ui.openTrip = null; ui.countryOpen = false; ui.newCatOpen = false;
+      renderTrips();
       var f = el("trip-form");
       if (f && f.scrollIntoView) f.scrollIntoView({ block: "start" });
       break;
@@ -1622,7 +2300,7 @@ document.addEventListener("click", function (ev) {
         if (state.trips[j].id === v) { state.trips.splice(j, 1); break; }
       }
       if (ui.openTrip === v) ui.openTrip = null;
-      if (ui.editingId === v) { ui.editingId = null; ui.formOpen = false; }
+      if (ui.draft && ui.draft.id === v) { ui.draft = null; ui.formOpen = false; }
       save();
       render();
       toast("Deleted.");
@@ -1636,7 +2314,7 @@ document.addEventListener("click", function (ev) {
   }
 });
 
-/* Live input: budget, points, trip category totals. */
+/* Live input: budget and trip category totals. */
 document.addEventListener("input", function (ev) {
   var t = ev.target;
   if (!t || !t.id && !t.getAttribute) return;
@@ -1650,14 +2328,19 @@ document.addEventListener("input", function (ev) {
     return;
   }
 
-  var pk = t.getAttribute("data-pts");
-  if (pk) {
-    state.points[pk] = num(t.value);
-    save();
-    var tot = el("view-dash").querySelector(".pts-total .v");
-    if (tot) tot.textContent = intFmt(num(state.points.avios) + num(state.points.revolut)) + " pts";
+  if (t.id === "f-country-q") {
+    ui.countryQuery = t.value;
+    var caret = t.selectionStart;
+    renderTrips();
+    var again = el("f-country-q");
+    if (again) {
+      again.focus();
+      try { again.setSelectionRange(caret, caret); } catch (e) {}
+    }
     return;
   }
+
+  if (t.id === "f-newcat") { ui.newCatText = t.value; return; }
 
   if (t.className && t.className.indexOf("f-cat") >= 0) {
     var out = el("f-total");
@@ -1688,6 +2371,12 @@ function refreshDashNumbers() {
   }, 220);
 }
 
+document.addEventListener("keydown", function (ev) {
+  if (ev.key !== "Enter") return;
+  var t = ev.target;
+  if (t && t.id === "f-newcat") { ev.preventDefault(); addCategory(t.value); }
+});
+
 el("importer").addEventListener("change", function (ev) {
   var file = ev.target.files && ev.target.files[0];
   if (!file) return;
@@ -1710,6 +2399,12 @@ function init() {
   ui.calYear = PLANNING_YEAR;
   ui.calMonth = now.getFullYear() === PLANNING_YEAR ? now.getMonth() : 0;
   ui.selDay = now.getFullYear() === PLANNING_YEAR ? todayISO() : "";
+  ui.weekStart = iso(weekStartOf(now.getFullYear() === PLANNING_YEAR ? now : new Date(PLANNING_YEAR, 0, 1)));
+
+  /* If migration reshaped a stored file, write the normalised version back now
+     rather than leaving retired keys around until the next edit. Untouched
+     storage — and a first run with none — is left alone. */
+  if (loadedRaw && loadedRaw !== JSON.stringify(state)) save();
 
   setTab("dash");
   restoreHandle();
