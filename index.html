@@ -101,7 +101,15 @@ textarea{resize:vertical; min-height:64px}
 input.num-in{font-family:var(--mono); font-variant-numeric:tabular-nums}
 .field{margin-bottom:10px}
 .field > .label{display:block; margin-bottom:5px}
-.two{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+/* Start/End dates. A native date control has a wide intrinsic minimum —
+   wider on iOS Safari than on Chromium — so a fixed 1fr 1fr forced each field
+   past half the row and the two collided. auto-fit drops to a single column
+   whenever two real controls will not fit, which is content-driven rather than
+   a guessed breakpoint: side by side on tablet and desktop, stacked on phones. */
+.two{display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); gap:10px}
+.two > .field{min-width:0}
+.two input{min-width:0}
+.two input[type="date"]{padding-left:9px; padding-right:9px}
 .seg{display:flex; gap:4px; background:var(--paper); border:1px solid var(--line); border-radius:11px; padding:3px}
 .seg button{
   flex:1; appearance:none; border:0; background:transparent; border-radius:8px; padding:7px 4px;
@@ -288,11 +296,14 @@ input.num-in{font-family:var(--mono); font-variant-numeric:tabular-nums}
 .brk .v{font-family:var(--mono); font-size:12.5px; width:74px; text-align:right; flex:0 0 auto}
 .brk .p{font-family:var(--mono); font-size:11px; color:var(--muted); width:34px; text-align:right; flex:0 0 auto}
 .notes{margin-top:9px; padding-top:9px; border-top:1px solid var(--line); font-size:13.5px; white-space:pre-wrap}
-.cats{display:grid; grid-template-columns:1fr 1fr; gap:8px}
-.cat-in{display:flex; align-items:center; gap:7px; border:1px solid var(--line); border-radius:10px; padding:6px 9px}
+.cats{display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px}
+.cat-in{display:flex; align-items:center; gap:6px; border:1px solid var(--line); border-radius:10px; padding:6px 8px; min-width:0}
 .cat-in i{width:8px; height:8px; border-radius:3px; flex:0 0 auto}
-.cat-in label{font-size:12px; color:var(--muted); flex:1}
-.cat-in input{border:0; padding:0; text-align:right; width:74px; font-family:var(--mono); background:transparent}
+.cat-in label{font-size:12px; color:var(--muted); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.cat-in input{border:0; padding:0; text-align:right; width:56px; min-width:0; flex:0 0 auto; font-family:var(--mono); background:transparent}
+@media (max-width:360px){
+  .cats{grid-template-columns:1fr}
+}
 .cat-in input:focus{outline:0}
 .chips{display:flex; flex-wrap:wrap; gap:6px; align-items:center; min-height:24px}
 .chip{

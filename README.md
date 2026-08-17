@@ -126,12 +126,18 @@ against it anywhere can be removed.
 Extending to 2027+ means computing the movable feasts (Easter and everything
 hanging off it) and re-checking each national list — don't guess the dates.
 
+## Backlog
+
+Known-but-not-built work, and decisions deliberately deferred, live in
+[`backlog.md`](backlog.md).
+
 ## Files
 
 ```
 index.html             the whole app (markup + CSS + JS)
 sw.js                  service worker, cache-first offline
 manifest.webmanifest   PWA manifest
+backlog.md             known-but-not-built work
 icon-180.png           apple-touch-icon
 icon-512.png           manifest icon
 ```
