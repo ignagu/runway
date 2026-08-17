@@ -296,15 +296,21 @@ input.num-in{font-family:var(--mono); font-variant-numeric:tabular-nums}
 .brk .v{font-family:var(--mono); font-size:12.5px; width:74px; text-align:right; flex:0 0 auto}
 .brk .p{font-family:var(--mono); font-size:11px; color:var(--muted); width:34px; text-align:right; flex:0 0 auto}
 .notes{margin-top:9px; padding-top:9px; border-top:1px solid var(--line); font-size:13.5px; white-space:pre-wrap}
-.cats{display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px}
-.cat-in{display:flex; align-items:center; gap:6px; border:1px solid var(--line); border-radius:10px; padding:6px 8px; min-width:0}
-.cat-in i{width:8px; height:8px; border-radius:3px; flex:0 0 auto}
-.cat-in label{font-size:12px; color:var(--muted); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-.cat-in input{border:0; padding:0; text-align:right; width:56px; min-width:0; flex:0 0 auto; font-family:var(--mono); background:transparent}
-@media (max-width:360px){
-  .cats{grid-template-columns:1fr}
+.exp{border:1px solid var(--line); border-radius:11px; padding:8px; margin-bottom:8px; background:#FCFDFE}
+.exp-top{display:flex; align-items:center; gap:7px; margin-bottom:6px}
+.exp-top i{width:9px; height:9px; border-radius:3px; flex:0 0 auto}
+.exp-top select{flex:1; min-width:0; padding:8px 7px}
+.exp-top input{width:82px; flex:0 0 auto; text-align:right; padding:8px 8px}
+.exp input{margin-bottom:6px; padding:8px 9px}
+.exp input:last-child{margin-bottom:0}
+.exp .f-eurl{font-size:16px; color:var(--ink2)}
+.explink{
+  font-family:var(--mono); font-size:11.5px; color:var(--se); text-decoration:none;
+  border-bottom:1px solid #C3D6EA; padding-bottom:1px; word-break:break-all;
 }
-.cat-in input:focus{outline:0}
+.brk.sub{display:flex; align-items:baseline; gap:9px; padding:3px 0 3px 12px}
+.brk.sub .sk{flex:1; min-width:0; color:var(--text); font-size:12.5px; line-height:1.4}
+.brk.sub .sv{font-family:var(--mono); font-size:12.5px; color:var(--muted); flex:0 0 auto; white-space:nowrap}
 .chips{display:flex; flex-wrap:wrap; gap:6px; align-items:center; min-height:24px}
 .chip{
   appearance:none; display:inline-flex; align-items:center; gap:6px; cursor:pointer;
@@ -671,10 +677,32 @@ function catByKey(k) {
   return null;
 }
 
-function emptyBreakdown() {
-  var b = {}, c = cats();
-  for (var i = 0; i < c.length; i++) b[c[i].k] = 0;
-  return b;
+function blankExpense(catk) {
+  return { id: uid(), cat: catk || (cats()[0] && cats()[0].k) || "other", label: "", amount: 0, url: "" };
+}
+
+/* Only http/https survive. The app renders through innerHTML, so a stored
+   javascript: or data: URL would be live code rather than inert text. */
+function safeUrl(u) {
+  var v = String(u == null ? "" : u).trim();
+  if (!v) return "";
+  return /^https?:\/\/[^\s]+$/i.test(v) ? v : "";
+}
+
+function linkHost(u) {
+  try {
+    var h = new URL(u).hostname.replace(/^www\./i, "");
+    return h || u;
+  } catch (e) {
+    return u.replace(/^https?:\/\//i, "").split("/")[0] || u;
+  }
+}
+
+/* An expense worth keeping: it has money, a name, or a link to come back to.
+   A zero-amount expense carrying a link is the whole point — a hotel found
+   but not yet booked. */
+function expenseWorthKeeping(e) {
+  return num(e.amount) !== 0 || String(e.label || "").trim() !== "" || safeUrl(e.url) !== "";
 }
 
 function seedCats() {
@@ -771,27 +799,48 @@ function migrate(raw) {
   if (!trips || Object.prototype.toString.call(trips) !== "[object Array]") trips = [];
   for (var i = 0; i < trips.length; i++) {
     var t = trips[i] || {};
-    var src = (t.breakdown && typeof t.breakdown === "object") ? t.breakdown : {};
 
-    /* any breakdown key we do not know yet becomes a category, so no money
-       is silently dropped when restoring a file from another device */
-    for (var sk in src) {
-      if (!Object.prototype.hasOwnProperty.call(src, sk)) continue;
-      var known2 = false;
-      for (var kj = 0; kj < s.categories.length; kj++) if (s.categories[kj].k === sk) known2 = true;
-      if (!known2 && num(src[sk]) !== 0) {
-        s.categories.push({ k: sk, label: titleise(sk), c: nextCatColour(s.categories), custom: true });
+    /* --- expenses -----------------------------------------------------
+       Newest shape is a list. Older files carry a flat breakdown map, and
+       older ones still a single cost. Convert rather than drop. */
+    function ensureCat(k, labelHint) {
+      var key = String(k || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+      if (!key) key = "other";
+      for (var kj = 0; kj < s.categories.length; kj++) if (s.categories[kj].k === key) return key;
+      s.categories.push({
+        k: key, label: titleise(labelHint || key), c: nextCatColour(s.categories), custom: true
+      });
+      return key;
+    }
+
+    var exps = [];
+    var rawE = t.expenses;
+    if (Object.prototype.toString.call(rawE) === "[object Array]") {
+      for (var ei = 0; ei < rawE.length; ei++) {
+        var re = rawE[ei] || {};
+        var one = {
+          id: re.id ? String(re.id) : uid(),
+          cat: ensureCat(re.cat, re.cat),
+          label: String(re.label == null ? "" : re.label),
+          amount: num(re.amount),
+          url: safeUrl(re.url)
+        };
+        if (expenseWorthKeeping(one)) exps.push(one);
+      }
+    } else {
+      var src = (t.breakdown && typeof t.breakdown === "object") ? t.breakdown : {};
+      var seen = false;
+      for (var sk in src) {
+        if (!Object.prototype.hasOwnProperty.call(src, sk)) continue;
+        seen = true;
+        if (num(src[sk]) === 0) continue;
+        exps.push({ id: uid(), cat: ensureCat(sk, sk), label: "", amount: num(src[sk]), url: "" });
+      }
+      /* a legacy flat cost lands in "other" so nothing is lost */
+      if (!seen && t.cost != null && num(t.cost) !== 0) {
+        exps.push({ id: uid(), cat: ensureCat("other", "other"), label: "", amount: num(t.cost), url: "" });
       }
     }
-
-    var b = {}, seen = false;
-    for (var c = 0; c < s.categories.length; c++) {
-      var k = s.categories[c].k;
-      if (src[k] != null) seen = true;
-      b[k] = num(src[k]);
-    }
-    /* a legacy flat cost lands in "other" so nothing is lost */
-    if (!seen && t.cost != null) b.other = num(t.cost);
 
     /* countries: an array of codes, or an older free-text "place" */
     var codes = [];
@@ -820,7 +869,7 @@ function migrate(raw) {
       end: /^\d{4}-\d{2}-\d{2}$/.test(t.end || "") ? t.end : "",
       status: status,
       notes: notes,
-      breakdown: b
+      expenses: exps
     });
   }
   return s;
@@ -859,10 +908,30 @@ function save() {
    ========================================================================= */
 
 function tripTotal(t) {
-  var s = 0;
-  var c = cats();
-  for (var i = 0; i < c.length; i++) s += num(t.breakdown[c[i].k]);
+  var s = 0, e = t.expenses || [];
+  for (var i = 0; i < e.length; i++) s += num(e[i].amount);
   return s;
+}
+
+function expensesInCat(t, k) {
+  var out = [], e = t.expenses || [];
+  for (var i = 0; i < e.length; i++) if (e[i].cat === k) out.push(e[i]);
+  return out;
+}
+
+function catTotal(t, k) {
+  var s = 0, e = t.expenses || [];
+  for (var i = 0; i < e.length; i++) if (e[i].cat === k) s += num(e[i].amount);
+  return s;
+}
+
+/* Categories this trip actually uses, in the global category order. */
+function catsUsed(t) {
+  var out = [], list = cats();
+  for (var i = 0; i < list.length; i++) {
+    if (expensesInCat(t, list[i].k).length) out.push(list[i]);
+  }
+  return out;
 }
 
 function tripYear(t) {
@@ -1609,7 +1678,7 @@ function renderCal() {
 function blankTrip() {
   return {
     id: uid(), name: "", countries: [], start: "", end: "",
-    status: STATUSES[0], notes: "", breakdown: emptyBreakdown()
+    status: STATUSES[0], notes: "", expenses: [blankExpense()]
   };
 }
 
@@ -1683,21 +1752,39 @@ function tripForm(t) {
 
   h += '<div class="field"><span class="label">Status</span><select id="f-status">' + optList(STATUSES, t.status) + "</select></div>";
 
-  h += '<div class="field"><span class="label">Budget breakdown</span><div class="cats">';
+  h += '<div class="field"><span class="label">Expenses</span>';
   var list = cats();
-  for (var i = 0; i < list.length; i++) {
-    var c = list[i];
-    var v = num(t.breakdown[c.k]);
-    h += '<div class="cat-in"><i style="background:' + c.c + '"></i>' +
-      '<label for="f-' + c.k + '">' + esc(c.label) + "</label>" +
-      '<input id="f-' + c.k + '" class="f-cat" data-cat="' + c.k + '" type="text" inputmode="decimal" ' +
-        'placeholder="0" value="' + (v ? esc(String(v)) : "") + '">' +
-      (c.custom && !catInUse(c.k)
-        ? '<button class="catx" data-act="cat-del" data-v="' + esc(c.k) + '" aria-label="Remove ' + esc(c.label) + '">\u00d7</button>'
-        : "") +
+  var exps = t.expenses || [];
+  if (!exps.length) {
+    h += '<p class="empty" style="margin:0 0 8px">Nothing yet \u2014 add a flight, a hotel, anything you want to track.</p>';
+  }
+  for (var i = 0; i < exps.length; i++) {
+    var e = exps[i];
+    var pre = "f-exp-" + esc(e.id);
+    var cat = catByKey(e.cat) || list[0];
+
+    var opts = "";
+    for (var ci = 0; ci < list.length; ci++) {
+      opts += '<option value="' + esc(list[ci].k) + '"' + (list[ci].k === e.cat ? " selected" : "") +
+              ">" + esc(list[ci].label) + "</option>";
+    }
+
+    h += '<div class="exp">' +
+      '<div class="exp-top">' +
+        '<i style="background:' + (cat ? cat.c : "#8A94A0") + '"></i>' +
+        '<select id="' + pre + '-cat" class="f-ecat" data-exp="' + esc(e.id) + '">' + opts + "</select>" +
+        '<input id="' + pre + '-amt" class="f-amt num-in" data-exp="' + esc(e.id) + '" type="text" ' +
+          'inputmode="decimal" placeholder="0" aria-label="Amount" value="' + (num(e.amount) ? esc(String(num(e.amount))) : "") + '">' +
+        '<button class="catx" data-act="exp-del" data-v="' + esc(e.id) + '" aria-label="Remove expense">\u00d7</button>' +
+      "</div>" +
+      '<input id="' + pre + '-label" class="f-elabel" data-exp="' + esc(e.id) + '" type="text" ' +
+        'placeholder="What is it? (optional)" value="' + esc(e.label) + '">' +
+      '<input id="' + pre + '-url" class="f-eurl" data-exp="' + esc(e.id) + '" type="url" ' +
+        'inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" ' +
+        'placeholder="Link (optional)" value="' + esc(e.url) + '">' +
     "</div>";
   }
-  h += "</div>";
+  h += '<button class="btn small" style="margin-top:2px" data-act="exp-add">\uff0b Add expense</button>';
 
   if (ui.newCatOpen) {
     h += '<div class="newcat">' +
@@ -1707,6 +1794,21 @@ function tripForm(t) {
       '<button class="btn small" data-act="cat-cancel">Cancel</button></div>';
   } else {
     h += '<button class="btn small" style="margin-top:8px" data-act="cat-new">＋ New category</button>';
+  }
+
+  /* a category nothing spends on can be taken back out — otherwise a typo
+     would be permanent */
+  var spare = [];
+  for (var si = 0; si < list.length; si++) {
+    if (list[si].custom && !catInUse(list[si].k)) spare.push(list[si]);
+  }
+  if (spare.length) {
+    h += '<div class="chips" style="margin-top:8px">';
+    for (var sj = 0; sj < spare.length; sj++) {
+      h += '<button class="chip" data-act="cat-del" data-v="' + esc(spare[sj].k) + '" ' +
+        'title="Remove this unused category">' + esc(spare[sj].label) + '<span class="x">\u00d7</span></button>';
+    }
+    h += '</div><p class="hint" style="margin:5px 0 0">Unused categories \u2014 tap to remove.</p>';
   }
   h += "</div>";
 
@@ -1724,12 +1826,16 @@ function tripForm(t) {
 }
 
 function catInUse(k) {
-  for (var i = 0; i < state.trips.length; i++) if (num(state.trips[i].breakdown[k]) !== 0) return true;
+  var pools = state.trips.slice();
+  if (ui.draft) pools.push(ui.draft);
+  for (var i = 0; i < pools.length; i++) {
+    if (expensesInCat(pools[i], k).length) return true;
+  }
   return false;
 }
 
 function formTotal() {
-  var inputs = document.querySelectorAll(".f-cat");
+  var inputs = document.querySelectorAll(".f-amt");
   var s = 0;
   for (var i = 0; i < inputs.length; i++) s += num(inputs[i].value);
   return s;
@@ -1749,12 +1855,25 @@ function readForm() {
     end: el("f-end").value || "",
     status: el("f-status").value,
     notes: el("f-notes").value,
-    breakdown: emptyBreakdown()
+    expenses: []
   };
-  var list = cats();
-  for (var i = 0; i < list.length; i++) {
-    var node = el("f-" + list[i].k);
-    out.breakdown[list[i].k] = node ? num(node.value) : num(d.breakdown[list[i].k]);
+
+  /* read the rows back in DOM order, falling back to the draft for any row
+     that is not currently rendered */
+  var rows = (d.expenses || []);
+  for (var i = 0; i < rows.length; i++) {
+    var e = rows[i];
+    var catN = el("f-exp-" + e.id + "-cat");
+    var amtN = el("f-exp-" + e.id + "-amt");
+    var labN = el("f-exp-" + e.id + "-label");
+    var urlN = el("f-exp-" + e.id + "-url");
+    out.expenses.push({
+      id: e.id,
+      cat: catN ? catN.value : e.cat,
+      label: labN ? labN.value : e.label,
+      amount: amtN ? num(amtN.value) : num(e.amount),
+      url: urlN ? String(urlN.value).trim() : e.url
+    });
   }
   if (out.start && out.end && out.end < out.start) { var sw = out.start; out.start = out.end; out.end = sw; }
   return out;
@@ -1777,12 +1896,13 @@ function tripCard(t) {
   var open = ui.openTrip === t.id;
   var list = cats();
 
+  var used = catsUsed(t);
   var bar = "";
   if (tot > 0) {
-    for (var i = 0; i < list.length; i++) {
-      var v = num(t.breakdown[list[i].k]);
+    for (var i = 0; i < used.length; i++) {
+      var v = catTotal(t, used[i].k);
       if (v <= 0) continue;
-      bar += '<i style="width:' + (v / tot * 100) + '%;background:' + list[i].c + '"></i>';
+      bar += '<i style="width:' + (v / tot * 100) + '%;background:' + used[i].c + '"></i>';
     }
   }
 
@@ -1807,13 +1927,36 @@ function tripCard(t) {
 
   if (open) {
     h += '<div class="trip-body">';
-    for (var c = 0; c < list.length; c++) {
-      var cat = list[c], val = num(t.breakdown[cat.k]);
+    if (!used.length) {
+      h += '<p class="empty" style="margin:0">No expenses on this trip yet.</p>';
+    }
+    for (var c = 0; c < used.length; c++) {
+      var cat = used[c], val = catTotal(t, cat.k);
       var pp = tot > 0 ? val / tot : 0;
       h += '<div class="brk"><span class="k">' + esc(cat.label) + "</span>" +
         '<span class="t"><i style="width:' + (pp * 100) + '%;background:' + cat.c + '"></i></span>' +
         '<span class="v">' + money(val) + "</span>" +
         '<span class="p">' + (tot > 0 ? Math.round(pp * 100) + "%" : "\u2014") + "</span></div>";
+
+      /* the individual lines, unless a single anonymous expense already says
+         everything the category row said */
+      var lines = expensesInCat(t, cat.k);
+      var mute = lines.length === 1 && !String(lines[0].label || "").trim() && !safeUrl(lines[0].url);
+      if (mute) continue;
+      for (var li = 0; li < lines.length; li++) {
+        var e = lines[li];
+        var url = safeUrl(e.url);
+        var link = url
+          ? '<a class="explink" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' +
+            esc(linkHost(url)) + " \u2197</a>"
+          : "";
+        var name = String(e.label || "").trim();
+        /* an unlabelled line is identified by its link; with neither, the
+           amount is all there is to say */
+        var who = name ? esc(name) + (link ? " " + link : "") : (link || "\u2014");
+        h += '<div class="brk sub"><span class="sk">' + who + "</span>" +
+          '<span class="sv">' + money(num(e.amount)) + "</span></div>";
+      }
     }
     h += '<div class="brk" style="border-top:1px solid var(--line);margin-top:6px;padding-top:8px">' +
       '<span class="k" style="color:var(--ink);font-weight:600">Total</span><span class="t" style="background:transparent"></span>' +
@@ -2177,8 +2320,6 @@ function addCategory(rawLabel) {
   for (i = 0; i < list.length; i++) {
     if (catKey(list[i].label) === key || list[i].k === key) {
       toast("\u201c" + list[i].label + "\u201d already covers that \u2014 use it instead.");
-      var have = el("f-" + list[i].k);
-      if (have) { have.focus(); have.select && have.select(); }
       return;
     }
   }
@@ -2191,8 +2332,6 @@ function addCategory(rawLabel) {
     if (!close) continue;
     if (!window.confirm("\u201c" + label + "\u201d looks a lot like your existing \u201c" + list[i].label +
                         "\u201d.\n\nSplitting them means the same spend lands in two places. Add it anyway?")) {
-      var n = el("f-" + list[i].k);
-      if (n) { n.focus(); n.select && n.select(); }
       return;
     }
     break;
@@ -2204,13 +2343,22 @@ function addCategory(rawLabel) {
   }
   key = finalKey;
   state.categories.push({ k: key, label: label, c: nextCatColour(state.categories), custom: true });
-  for (i = 0; i < state.trips.length; i++) state.trips[i].breakdown[key] = 0;
-  if (ui.draft) ui.draft.breakdown[key] = 0;
-
   ui.newCatOpen = false;
   ui.newCatText = "";
   save();
-  refreshForm("f-" + key);
+
+  /* a category is added in order to be used, so open a row on it */
+  var fresh = null;
+  if (ui.formOpen) {
+    ui.draft = readForm();
+    fresh = blankExpense(key);
+    ui.draft.expenses.push(fresh);
+  }
+  renderTrips();
+  if (fresh) {
+    var n = el("f-exp-" + fresh.id + "-amt");
+    if (n) n.focus();
+  }
   toast("Added " + label + ".");
 }
 
@@ -2219,10 +2367,16 @@ function migrateTrip(t) {
   var out = {
     id: t.id, name: t.name, countries: (t.countries || []).slice(),
     start: t.start, end: t.end, status: t.status, notes: t.notes,
-    breakdown: emptyBreakdown()
+    expenses: []
   };
-  var list = cats();
-  for (var i = 0; i < list.length; i++) out.breakdown[list[i].k] = num(t.breakdown[list[i].k]);
+  var src = t.expenses || [];
+  for (var i = 0; i < src.length; i++) {
+    out.expenses.push({
+      id: src[i].id, cat: src[i].cat, label: src[i].label,
+      amount: num(src[i].amount), url: src[i].url || ""
+    });
+  }
+  if (!out.expenses.length) out.expenses.push(blankExpense());
   return out;
 }
 
@@ -2369,11 +2523,37 @@ document.addEventListener("click", function (ev) {
       for (var ci = 0; ci < state.categories.length; ci++) {
         if (state.categories[ci].k === v) { state.categories.splice(ci, 1); break; }
       }
-      for (var ti = 0; ti < state.trips.length; ti++) delete state.trips[ti].breakdown[v];
-      if (ui.draft) delete ui.draft.breakdown[v];
       save();
       refreshForm();
       toast("Removed " + goner.label + ".");
+      break;
+
+    /* ---- expenses ---- */
+    case "exp-add":
+      if (ui.formOpen) {
+        ui.draft = readForm();
+        /* default to the first category this trip is not already using, so
+           adding rows in a row still lands Flights, Lodging, Food */
+        var listA = cats(), pick = null;
+        for (var ai = 0; ai < listA.length; ai++) {
+          if (!expensesInCat(ui.draft, listA[ai].k).length) { pick = listA[ai].k; break; }
+        }
+        var fresh = blankExpense(pick);
+        ui.draft.expenses.push(fresh);
+        renderTrips();
+        var lab = el("f-exp-" + fresh.id + "-amt");
+        if (lab) lab.focus();
+      }
+      break;
+
+    case "exp-del":
+      if (ui.formOpen) {
+        ui.draft = readForm();
+        for (var di = 0; di < ui.draft.expenses.length; di++) {
+          if (ui.draft.expenses[di].id === v) { ui.draft.expenses.splice(di, 1); break; }
+        }
+        renderTrips();
+      }
       break;
 
     /* ---- trips ---- */
@@ -2394,6 +2574,28 @@ document.addEventListener("click", function (ev) {
     case "trip-save":
       var t = readForm();
       if (!t.name) { toast("Give the trip a name first."); el("f-name").focus(); return; }
+
+      /* a link that is not http(s) is refused out loud rather than dropped */
+      var bad = null;
+      for (var vi = 0; vi < t.expenses.length; vi++) {
+        var rawUrl = String(t.expenses[vi].url || "").trim();
+        if (rawUrl && !safeUrl(rawUrl)) { bad = t.expenses[vi]; break; }
+        t.expenses[vi].url = safeUrl(rawUrl);
+        t.expenses[vi].label = String(t.expenses[vi].label || "").trim();
+      }
+      if (bad) {
+        toast("Links need to start with http:// or https://");
+        var badN = el("f-exp-" + bad.id + "-url");
+        if (badN) { badN.focus(); badN.select && badN.select(); }
+        return;
+      }
+
+      /* keep anything with money, a name, or a link; drop blank rows */
+      var kept = [];
+      for (var ki = 0; ki < t.expenses.length; ki++) {
+        if (expenseWorthKeeping(t.expenses[ki])) kept.push(t.expenses[ki]);
+      }
+      t.expenses = kept;
       var existing = tripById(t.id);
       if (existing) {
         for (var i = 0; i < state.trips.length; i++) {
@@ -2499,9 +2701,17 @@ document.addEventListener("input", function (ev) {
 
   if (t.id === "f-newcat") { ui.newCatText = t.value; return; }
 
-  if (t.className && t.className.indexOf("f-cat") >= 0) {
+  if (t.className && t.className.indexOf("f-amt") >= 0) {
     var out = el("f-total");
     if (out) out.textContent = money(formTotal());
+    return;
+  }
+
+  /* keep the row's colour dot honest when its category changes */
+  if (t.className && t.className.indexOf("f-ecat") >= 0) {
+    var picked = catByKey(t.value);
+    var dot = t.parentNode ? t.parentNode.querySelector("i") : null;
+    if (dot && picked) dot.style.background = picked.c;
   }
 });
 

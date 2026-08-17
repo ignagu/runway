@@ -8,67 +8,43 @@ reconstructed later.
 
 ## Open
 
-### Itemised expenses, with a link per expense
-
-**The problem.** A category holds a single number. A trip needing two flight
-bookings can only record their sum, so the two can't be told apart. And a hotel
-found on Booking.com but not yet booked has nowhere to live — there's no way to
-save the link and come back to it.
-
-**Model.** Replace the flat map with a list:
-
-```js
-// now
-breakdown: { flights: 1200, lodging: 600 }
-
-// proposed
-expenses: [
-  { id: "e1", cat: "flights", label: "Outbound",  amount: 700, url: "" },
-  { id: "e2", cat: "flights", label: "Return",    amount: 500, url: "" },
-  { id: "e3", cat: "lodging", label: "",          amount: 600, url: "https://…" }
-]
-```
-
-Category totals become derived — the sum of that category's expenses. Trip
-totals, the drill-down proportion bars, the dashboard figures and the
-month-by-month chart all read derived values, so their own logic is unchanged.
-
-Line items **replace** the per-category number rather than sitting alongside it.
-Keeping both would mean two sources of truth for one figure and a reconciliation
-on every edit.
-
-**Links belong to an expense**, not to the trip — a link is for *this* hotel or
-*that* flight. No trip-level link list.
-
-**Security — do not skip.** The app renders through `innerHTML`, so a stored
-`javascript:` URL would be live code, not inert text. Accept `http` and `https`
-only and drop anything else at the point of saving *and* rendering. Render as
-`target="_blank" rel="noopener noreferrer"`, and show the hostname
-(`booking.com`) rather than the raw URL, which keeps the card readable and makes
-a disguised link obvious. The app itself still makes no network requests — a
-stored link does nothing until it is tapped.
-
-**Migration.** Each non-zero `breakdown[k]` becomes one expense in that category
-with an empty label. Older backups must still import, and the new shape has to
-survive a Backup → Restore round trip unchanged. `migrate()` already tolerates
-partial shapes and absorbs unknown category keys; this extends it.
-
-**Touch points** (all in `index.html`): `emptyBreakdown()`, `cats()`,
-`catByKey()`, `tripTotal()`, `migrate()`, `tripForm()` / `readForm()`,
-`tripCard()`.
-
-**UI sketch.** Expense rows in the trip form — category, label, amount, optional
-link — with `+ Add expense` and a remove control per row. The drill-down groups
-by category and lists each line under its category bar. Custom categories keep
-working as they do today.
-
-**Worth deciding when it's built:** whether an expense carries its own date
-(useful for a deposit paid months before the trip), and whether a "booked" flag
-per expense would be more useful than the trip-level status.
+Nothing open.
 
 ---
 
-## Recently fixed
+## Shipped
+
+### Itemised expenses, with a link per expense
+
+A category used to hold a single number, so two flight bookings on one trip
+could only be recorded as their sum, and a hotel found on Booking.com had
+nowhere to live until it was booked.
+
+Trips now hold a list of expenses — category, label, amount, optional link —
+and category totals are derived from them. Trip totals, the proportion bars,
+the dashboard figures and the month chart all read derived values, so their
+logic was untouched.
+
+Decisions taken while building it:
+
+- **Line items replace the per-category number** rather than sitting alongside
+  it, so there is one source of truth for every figure.
+- **A link belongs to an expense**, not to the trip.
+- **A zero-amount expense with a label or a link is kept** — that is the
+  "found the hotel, haven't booked it" case the feature exists for. Only rows
+  that are blank in all three respects are dropped on save.
+- An expense carries those four fields and nothing else; trip status remains
+  the only booking signal. A per-expense booked flag and a per-expense date
+  were both considered and left out — the date in particular would force the
+  month chart to choose between bucketing by trip start or by expense date.
+- The drill-down only lists categories that have expenses, and skips the
+  sub-line for a lone unlabelled, unlinked expense, since the category row
+  already says it.
+
+**Links are restricted to http/https**, checked when saving and again when
+rendering, and shown as their hostname. A `javascript:` URL smuggled directly
+into a data file is stripped on load rather than rendered — the app builds its
+DOM with `innerHTML`, so that would otherwise be live code.
 
 ### Start and End date pickers overlapped
 

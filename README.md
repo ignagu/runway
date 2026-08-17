@@ -11,8 +11,9 @@ Three tabs:
 - **Calendar** — year, month and week views over the 2026 Spanish (Madrid) and
   Swedish holidays, long-weekend runs and single-day bridges (*puentes*), plus
   your own trips.
-- **Trips** — trips tagged with one or more countries, and a budget breakdown
-  whose categories you can extend.
+- **Trips** — trips tagged with one or more countries, itemised into expenses
+  (several per category, each with an optional link) under categories you can
+  extend.
 
 ## Never commit your data
 
@@ -103,6 +104,17 @@ Trips starting before the window do not draw on it — they predate the budget.
 They stay visible (faded in the chart, and their total called out under the
 tiles) so nothing is quietly dropped. Budgets stored without a window keep the
 full year, so existing figures do not shift.
+
+## Expenses
+
+A trip is a list of expenses. Each one has a category, an optional label, an
+amount and an optional link, so two flight bookings on the same trip stay
+distinct and a hotel you have found but not booked can sit there at €0 with its
+link until you act on it. Category totals are derived by summing.
+
+Links must be `http`/`https` — anything else is refused when saving and stripped
+when rendering, because the app builds its DOM with `innerHTML`. They are shown
+by hostname and open in a new tab. The app never fetches them.
 
 ## Categories
 
