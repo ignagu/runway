@@ -8,7 +8,76 @@ reconstructed later.
 
 ## Open
 
-Nothing open.
+### Group trips by year
+
+The Trips tab is one flat list sorted by total, so a 2026 trip sits next to a
+2028 one with nothing to separate them. Group under year headings — year, trip
+count, year total — keeping the sort by total inside each group. Trips route to
+a year by start date today (`tripYear()`, `index.html:939`); undated ones need
+a home, either the planning year as now or their own "No dates yet" group.
+
+Pairs with the year-context item below: if the Trips tab knows which year the
+dashboard is on, that group is the one to open on.
+
+### Dates: end after start, same-day default, and trips with no fixed dates
+
+Three related things, smallest first.
+
+- **End cannot precede start.** Today the two are silently swapped on save.
+  Set `min` on the end field from the start value so the picker won't offer an
+  earlier day.
+- **Picking a start defaults end to the same day.** A one-day trip is then no
+  extra taps, and a longer one is an edit rather than an entry.
+- **A trip may have a length but no dates.** "Two weeks somewhere in spring
+  2028" is a real plan worth budgeting, and forcing exact dates to record it
+  invents precision that doesn't exist.
+
+The third is the substantial one. A trip would carry either exact dates *or* a
+duration plus a rough window (a season, month or quarter of a given year).
+Open questions to settle before building:
+
+- Which month does an undated trip land in on the month-by-month chart —
+  spread across the window, or the window's first month?
+- How does the calendar show it? It has no days to mark. A band across the
+  season, or simply absent from the grid and present only in the trip list.
+- Does it still route to a year the same way? The window's year is the obvious
+  answer.
+
+### Public holidays for Spain and Sweden, five years out
+
+Only 2026 is baked in. Extend through 2031.
+
+**Sweden is fully rule-based** and should be computed, not typed: fixed dates
+(1 Jan, 6 Jan, 1 May, 6 Jun, 24/25/26/31 Dec), Easter-relative days
+(Långfredagen −2, Påskdagen, Annandag påsk +1, Kristi himmelsfärd +39,
+Pingstdagen +49), Midsommarafton as the Friday falling 19–25 June with
+Midsommardagen the day after, and Alla helgons dag as the Saturday falling
+31 Oct – 6 Nov. Sweden does not move a holiday that lands on a weekend.
+
+**Spain is mostly rule-based but not entirely.** National fixed days and the
+Easter-relative Jueves Santo (−3) and Viernes Santo (−2) compute cleanly, as do
+the Comunidad de Madrid and Madrid local days (2 May, 15 May, 9 Nov). What does
+*not* compute is which national days get transferred when they fall on a
+Sunday — that is set annually in the BOE *calendario laboral*, and the same
+mechanism produced the two "observed" entries already in the 2026 list. The
+regional and local selections are likewise confirmed year by year.
+
+So: implement the Computus (anonymous Gregorian algorithm) and derive
+everything derivable; mark any Spanish transferred day as provisional until the
+official calendar for that year exists, rather than asserting a date the app
+cannot know. Do not hand-write dates from memory — that was the standing
+instruction from the original spec and it still holds.
+
+### Carry the dashboard's year into a new trip
+
+The dashboard has a year switcher; the Trips tab ignores it. Someone looking at
+2028 and then adding a trip almost certainly means 2028, but gets whatever the
+date picker defaults to.
+
+Make the selected year visible on the Trips tab and use it as the default for a
+new trip — prefilling its dates or its rough window — while leaving it trivially
+changeable. It is a default, not a constraint: adding a 2029 trip while looking
+at 2028 must stay a one-step action, not a fight.
 
 ---
 
