@@ -8,80 +8,68 @@ reconstructed later.
 
 ## Open
 
-### Group trips by year
-
-The Trips tab is one flat list sorted by total, so a 2026 trip sits next to a
-2028 one with nothing to separate them. Group under year headings — year, trip
-count, year total — keeping the sort by total inside each group. Trips route to
-a year by start date today (`tripYear()`, `index.html:939`); undated ones need
-a home, either the planning year as now or their own "No dates yet" group.
-
-Pairs with the year-context item below: if the Trips tab knows which year the
-dashboard is on, that group is the one to open on.
-
-### Dates: end after start, same-day default, and trips with no fixed dates
-
-Three related things, smallest first.
-
-- **End cannot precede start.** Today the two are silently swapped on save.
-  Set `min` on the end field from the start value so the picker won't offer an
-  earlier day.
-- **Picking a start defaults end to the same day.** A one-day trip is then no
-  extra taps, and a longer one is an edit rather than an entry.
-- **A trip may have a length but no dates.** "Two weeks somewhere in spring
-  2028" is a real plan worth budgeting, and forcing exact dates to record it
-  invents precision that doesn't exist.
-
-The third is the substantial one. A trip would carry either exact dates *or* a
-duration plus a rough window (a season, month or quarter of a given year).
-Open questions to settle before building:
-
-- Which month does an undated trip land in on the month-by-month chart —
-  spread across the window, or the window's first month?
-- How does the calendar show it? It has no days to mark. A band across the
-  season, or simply absent from the grid and present only in the trip list.
-- Does it still route to a year the same way? The window's year is the obvious
-  answer.
-
-### Public holidays for Spain and Sweden, five years out
-
-Only 2026 is baked in. Extend through 2031.
-
-**Sweden is fully rule-based** and should be computed, not typed: fixed dates
-(1 Jan, 6 Jan, 1 May, 6 Jun, 24/25/26/31 Dec), Easter-relative days
-(Långfredagen −2, Påskdagen, Annandag påsk +1, Kristi himmelsfärd +39,
-Pingstdagen +49), Midsommarafton as the Friday falling 19–25 June with
-Midsommardagen the day after, and Alla helgons dag as the Saturday falling
-31 Oct – 6 Nov. Sweden does not move a holiday that lands on a weekend.
-
-**Spain is mostly rule-based but not entirely.** National fixed days and the
-Easter-relative Jueves Santo (−3) and Viernes Santo (−2) compute cleanly, as do
-the Comunidad de Madrid and Madrid local days (2 May, 15 May, 9 Nov). What does
-*not* compute is which national days get transferred when they fall on a
-Sunday — that is set annually in the BOE *calendario laboral*, and the same
-mechanism produced the two "observed" entries already in the 2026 list. The
-regional and local selections are likewise confirmed year by year.
-
-So: implement the Computus (anonymous Gregorian algorithm) and derive
-everything derivable; mark any Spanish transferred day as provisional until the
-official calendar for that year exists, rather than asserting a date the app
-cannot know. Do not hand-write dates from memory — that was the standing
-instruction from the original spec and it still holds.
-
-### Carry the dashboard's year into a new trip
-
-The dashboard has a year switcher; the Trips tab ignores it. Someone looking at
-2028 and then adding a trip almost certainly means 2028, but gets whatever the
-date picker defaults to.
-
-Make the selected year visible on the Trips tab and use it as the default for a
-new trip — prefilling its dates or its rough window — while leaving it trivially
-changeable. It is a default, not a constraint: adding a 2029 trip while looking
-at 2028 must stay a one-step action, not a fight.
+Nothing open.
 
 ---
 
 ## Shipped
+
+### Trips grouped by year, with the planning year carried through
+
+The Trips tab was one flat list, so a 2026 trip sat beside a 2028 one with
+nothing between them. Trips now group under year headings carrying the count
+and the year's total, still sorted by total inside each group.
+
+The year switcher is shared with the dashboard: whichever year is on screen is
+the one the Add button names, and a trip created without dates records that year
+(`planYear`) rather than falling back to a hard-coded 2026. Changing the year
+while a rough-plan draft is open moves the draft with it.
+
+### Dates: end after start, same-day default, and plans without dates
+
+- The end picker's `min` is the start date, so an earlier day cannot be chosen.
+  A stored end before the start is clamped up rather than silently swapped, as
+  it was before.
+- Picking a start proposes the same day as the end, so a day trip needs no
+  second pick and a longer one is an edit.
+- A trip can instead carry a **rough plan**: a length and a period —
+  "14 days, Spring 2028" — with no invented dates. One-tap presets cover
+  weekend / 5 days / a week / 10 days / 2 weeks; periods are seasons, quarters
+  or single months.
+
+Decisions taken while building it:
+
+- **Seasons name their months** (Spring (Mar–May), Winter (Jan–Feb)). "Winter
+  2028" is otherwise ambiguous across the year boundary; the label removes the
+  guess rather than the app making one.
+- **A rough plan lands in the first month of its period on the chart** —
+  predictable, and stated in the form. It counts against its year normally.
+- **It does not appear in the calendar at all.** There are no days to mark, and
+  inventing some would be false precision. The trip list is where it lives.
+- Switching a trip to exact dates clears the plan, so there is never both.
+
+### Spanish and Swedish holidays through 2031
+
+2026 stays the verified baked list. 2027–2031 are computed from rules, never
+typed.
+
+**Sweden is exact** — fixed days, Easter offsets via the computus,
+Midsommarafton as the Friday falling 19–25 June, Alla helgons dag as the
+Saturday falling 31 Oct – 6 Nov, and no weekend transfers.
+
+**Spain is computed but partly provisional.** The fixed nationals, Jueves and
+Viernes Santo, and the Madrid regional and local days all derive cleanly. What
+cannot be derived is which national day moves when it falls on a Sunday — that
+is set annually in the BOE *calendario laboral*. Those transfers are emitted on
+the Monday, flagged provisional, labelled as such in the day detail, and
+explained by a line in the calendar. A regional or local feast landing on a
+Sunday keeps its real date and is simply not an extra day off.
+
+Both rule sets were checked by generating 2026 and diffing against the verified
+baked list — they reproduce it exactly, which is the evidence that the rules are
+right. The computus was separately checked against eight known Easter dates.
+Navigating past 2031 says so rather than showing a year that merely looks
+holiday-free.
 
 ### Itemised expenses, with a link per expense
 
@@ -146,27 +134,3 @@ control is narrower, and it honours `min-width: 0` where iOS does not. Emulating
 a wider control by forcing `min-width` is a proxy that passed while the real
 device still failed. Where a native control's size cannot be measured, prefer a
 layout that does not depend on knowing it.
-
----
-
-## Deferred — decided, not scheduled
-
-### Google Drive sync
-
-Reviewed and achievable entirely client-side: Google Identity Services for the
-token, Drive REST v3 with the `drive.file` scope (which only touches files the
-app itself creates, is classed non-sensitive, and so needs no Google
-verification review). No backend. Local storage would stay the source of truth
-with Drive as a mirror.
-
-Held deliberately. The three blockers, recorded so this isn't re-argued:
-
-1. Needs a Google Cloud OAuth client ID, which only the repo owner can create.
-2. OAuth popups are unreliable in an iOS home-screen PWA — they can bounce to
-   Safari and fail to return. Redirect flow works but navigates the app away and
-   back.
-3. Two devices editing offline is last-write-wins unless Drive's revision id is
-   tracked and divergence is surfaced.
-
-Until then, Backup/Restore is the sync path: the share sheet into Files/iCloud
-on iOS, a normal download elsewhere.

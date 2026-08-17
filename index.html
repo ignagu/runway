@@ -313,6 +313,16 @@ input.num-in{font-family:var(--mono); font-variant-numeric:tabular-nums}
 .brk.sub{display:flex; align-items:baseline; gap:9px; padding:3px 0 3px 12px}
 .brk.sub .sk{flex:1; min-width:0; color:var(--text); font-size:12.5px; line-height:1.4}
 .brk.sub .sv{font-family:var(--mono); font-size:12.5px; color:var(--muted); flex:0 0 auto; white-space:nowrap}
+.ygroup{
+  display:flex; align-items:baseline; justify-content:space-between; gap:10px;
+  padding:6px 4px 7px; margin:14px 0 7px; border-bottom:1px solid var(--line);
+}
+.ygroup:first-child{margin-top:2px}
+.ylabel{font-family:var(--mono); font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted)}
+.ygroup.is-now .ylabel{color:var(--ink); font-weight:700}
+.ymeta{font-family:var(--mono); font-size:11.5px; color:var(--muted); white-space:nowrap}
+.chip.on{background:var(--ink); border-color:var(--ink); color:#fff}
+.prov{font-style:normal; opacity:.75}
 .chips{display:flex; flex-wrap:wrap; gap:6px; align-items:center; min-height:24px}
 .chip{
   appearance:none; display:inline-flex; align-items:center; gap:6px; cursor:pointer;
@@ -432,6 +442,33 @@ var CAT_PALETTE = [
 
 var STATUSES = ["Idea", "Booked", "Done"];
 
+/* Rough plans: a length plus a period, for a trip whose dates aren't settled.
+   Months are 0-based; a period covers [from .. to] inclusive. */
+var PERIODS = [
+  { k: "year",   label: "Any time",   from: 0,  to: 11 },
+  { k: "spring", label: "Spring (Mar–May)", from: 2, to: 4 },
+  { k: "summer", label: "Summer (Jun–Aug)", from: 5, to: 7 },
+  { k: "autumn", label: "Autumn (Sep–Nov)", from: 8, to: 10 },
+  { k: "winter", label: "Winter (Jan–Feb)", from: 0, to: 1 },
+  { k: "q1", label: "Jan–Mar", from: 0, to: 2 },
+  { k: "q2", label: "Apr–Jun", from: 3, to: 5 },
+  { k: "q3", label: "Jul–Sep", from: 6, to: 8 },
+  { k: "q4", label: "Oct–Dec", from: 9, to: 11 }
+];
+function periodByKey(k) {
+  for (var i = 0; i < PERIODS.length; i++) if (PERIODS[i].k === k) return PERIODS[i];
+  return PERIODS[0];
+}
+
+/* Common trip lengths, offered as one-tap presets. */
+var LENGTHS = [
+  { d: 3,  label: "Weekend" },
+  { d: 5,  label: "5 days" },
+  { d: 7,  label: "A week" },
+  { d: 10, label: "10 days" },
+  { d: 14, label: "2 weeks" }
+];
+
 /* ISO 3166-1 alpha-2 + name. The flag is derived from the code. */
 var COUNTRIES = ("AD Andorra|AE United Arab Emirates|AF Afghanistan|AG Antigua and Barbuda|AI Anguilla|AL Albania|" +
 "AM Armenia|AO Angola|AR Argentina|AT Austria|AU Australia|AW Aruba|AZ Azerbaijan|BA Bosnia and Herzegovina|" +
@@ -484,6 +521,11 @@ var MONTHS = ["January","February","March","April","May","June",
               "July","August","September","October","November","December"];
 var MON_SHORT = ["J","F","M","A","M","J","J","A","S","O","N","D"];
 var MON_ABBR = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+/* the single months round out the period list, once MONTHS exists */
+(function () {
+  for (var m = 0; m < 12; m++) PERIODS.push({ k: "m" + m, label: MONTHS[m], from: m, to: m });
+})();
 var DOW = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 
 /* Baked-in 2026 holiday calendar. k: national | regional | local | observance */
@@ -521,6 +563,113 @@ var HOLIDAYS = [
   { d: "2026-12-26", c: "SE", n: "Annandag jul", k: "national" },
   { d: "2026-12-31", c: "SE", n: "Nyårsafton", k: "observance" }
 ];
+
+/* --- computed holidays, 2027 onward --------------------------------------
+   2026 above is the verified baked list and stays authoritative. Later years
+   are derived from rules, never typed from memory.
+
+   Sweden is entirely rule-based, so its computed years are exact.
+
+   Spain is not: which national day moves when it falls on a Sunday is set each
+   year in the BOE calendario laboral, and the local Madrid fiestas are chosen
+   annually too. Transfers are emitted with p:1 (provisional) and the calendar
+   says so, rather than asserting a date the app cannot know. */
+
+var COMPUTED_FROM = 2027;
+var COMPUTED_TO = 2031;
+
+/* Anonymous Gregorian computus. */
+function easterSunday(y) {
+  var a = y % 19, b = Math.floor(y / 100), c = y % 100;
+  var d = Math.floor(b / 4), e = b % 4;
+  var f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3);
+  var h = (19 * a + b - d - g + 15) % 30;
+  var i = Math.floor(c / 4), k = c % 4;
+  var l = (32 + 2 * e + 2 * i - h - k) % 7;
+  var m = Math.floor((a + 11 * h + 22 * l) / 451);
+  var mo = Math.floor((h + l - 7 * m + 114) / 31);
+  var da = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(y, mo - 1, da);
+}
+
+/* First `dow` (Mon=0..Sun=6) on or after the given date. */
+function dowOnOrAfter(y, month, day, dow) {
+  var d = new Date(y, month, day);
+  while (dowMon(d) !== dow) d = addDays(d, 1);
+  return d;
+}
+
+function swedishHolidays(y) {
+  var e = easterSunday(y);
+  var midsommarafton = dowOnOrAfter(y, 5, 19, 4);          /* Friday, 19-25 June */
+  var allhelgona = dowOnOrAfter(y, 9, 31, 5);              /* Saturday, 31 Oct - 6 Nov */
+  var out = [
+    { d: iso(new Date(y, 0, 1)),  n: "Nyårsdagen", k: "national" },
+    { d: iso(new Date(y, 0, 6)),  n: "Trettondedag jul", k: "national" },
+    { d: iso(addDays(e, -2)),     n: "Långfredagen", k: "national" },
+    { d: iso(e),                  n: "Påskdagen", k: "national" },
+    { d: iso(addDays(e, 1)),      n: "Annandag påsk", k: "national" },
+    { d: iso(new Date(y, 4, 1)),  n: "Första maj", k: "national" },
+    { d: iso(addDays(e, 39)),     n: "Kristi himmelsfärd", k: "national" },
+    { d: iso(addDays(e, 49)),     n: "Pingstdagen", k: "national" },
+    { d: iso(new Date(y, 5, 6)),  n: "Sveriges nationaldag", k: "national" },
+    { d: iso(midsommarafton),     n: "Midsommarafton", k: "observance" },
+    { d: iso(addDays(midsommarafton, 1)), n: "Midsommardagen", k: "national" },
+    { d: iso(allhelgona),         n: "Alla helgons dag", k: "national" },
+    { d: iso(new Date(y, 11, 24)), n: "Julafton", k: "observance" },
+    { d: iso(new Date(y, 11, 25)), n: "Juldagen", k: "national" },
+    { d: iso(new Date(y, 11, 26)), n: "Annandag jul", k: "national" },
+    { d: iso(new Date(y, 11, 31)), n: "Nyårsafton", k: "observance" }
+  ];
+  for (var i = 0; i < out.length; i++) out[i].c = "SE";
+  return out;
+}
+
+function spanishHolidays(y) {
+  var e = easterSunday(y);
+  var out = [];
+
+  /* Fixed national days. A day landing on a Sunday is normally transferred to
+     the Monday; the transfer is provisional until the official calendar. */
+  var fixed = [
+    [0, 1,  "Año Nuevo"], [0, 6, "Reyes / Epiphany"], [4, 1, "Fiesta del Trabajo"],
+    [7, 15, "Asunción"], [9, 12, "Fiesta Nacional / Hispanidad"],
+    [10, 1, "Todos los Santos"], [11, 6, "Constitución"],
+    [11, 8, "Inmaculada"], [11, 25, "Navidad"]
+  ];
+  for (var i = 0; i < fixed.length; i++) {
+    var dt = new Date(y, fixed[i][0], fixed[i][1]);
+    if (dowMon(dt) === 6) {
+      out.push({ d: iso(addDays(dt, 1)), n: fixed[i][2] + ", observed", k: "national", p: 1 });
+    } else {
+      out.push({ d: iso(dt), n: fixed[i][2], k: "national" });
+    }
+  }
+
+  out.push({ d: iso(addDays(e, -3)), n: "Jueves Santo", k: "regional" });
+  out.push({ d: iso(addDays(e, -2)), n: "Viernes Santo", k: "national" });
+  out.push({ d: iso(new Date(y, 4, 2)),  n: "Día de la Comunidad de Madrid", k: "regional" });
+  out.push({ d: iso(new Date(y, 4, 15)), n: "San Isidro", k: "local" });
+  out.push({ d: iso(new Date(y, 10, 9)), n: "La Almudena", k: "local" });
+
+  for (var j = 0; j < out.length; j++) out[j].c = "ES";
+  return out;
+}
+
+(function () {
+  for (var y = COMPUTED_FROM; y <= COMPUTED_TO; y++) {
+    HOLIDAYS = HOLIDAYS.concat(spanishHolidays(y), swedishHolidays(y));
+  }
+})();
+
+function holidayYearCovered(y) { return y === 2026 || (y >= COMPUTED_FROM && y <= COMPUTED_TO); }
+
+function yearHasProvisional(y) {
+  for (var i = 0; i < HOLIDAYS.length; i++) {
+    if (HOLIDAYS[i].p && HOLIDAYS[i].d.slice(0, 4) === String(y)) return true;
+  }
+  return false;
+}
 
 var HOL_BY_DAY = {};
 (function () {
@@ -860,6 +1009,19 @@ function migrate(raw) {
       else notes = (String(t.place) + (notes ? "\n" + notes : ""));   /* keep the text rather than lose it */
     }
 
+    /* a rough plan: length + period instead of exact dates */
+    var plan = null;
+    if (t.plan && typeof t.plan === "object") {
+      var py = parseInt(t.plan.year, 10);
+      if (py >= 1970 && py <= 3000) {
+        plan = {
+          year: py,
+          period: periodByKey(String(t.plan.period || "year")).k,
+          days: Math.max(0, Math.min(366, Math.round(num(t.plan.days))))
+        };
+      }
+    }
+
     /* "Planned" retired: it never meant money was committed, so it lands on Idea */
     var status = STATUSES.indexOf(t.status) >= 0 ? t.status : (t.status === "Planned" ? "Idea" : STATUSES[0]);
 
@@ -869,6 +1031,11 @@ function migrate(raw) {
       countries: codes,
       start: /^\d{4}-\d{2}-\d{2}$/.test(t.start || "") ? t.start : "",
       end: /^\d{4}-\d{2}-\d{2}$/.test(t.end || "") ? t.end : "",
+      plan: plan,
+      planYear: (function () {
+        var py = parseInt(t.planYear, 10);
+        return (py >= 1970 && py <= 3000) ? py : PLANNING_YEAR;
+      })(),
       status: status,
       notes: notes,
       expenses: exps
@@ -936,9 +1103,30 @@ function catsUsed(t) {
   return out;
 }
 
+function hasPlan(t) { return !!(t.plan && t.plan.year); }
+
 function tripYear(t) {
   var d = parseISO(t.start);
-  return d ? d.getFullYear() : PLANNING_YEAR;
+  if (d) return d.getFullYear();
+  if (hasPlan(t)) return t.plan.year;
+  return t.planYear || PLANNING_YEAR;
+}
+
+/* A rough plan lands in the first month of its period — predictable, and
+   stated in the chart. A trip with neither dates nor a plan has no month. */
+function tripMonth(t) {
+  var d = parseISO(t.start);
+  if (d) return d.getMonth();
+  if (hasPlan(t)) return periodByKey(t.plan.period).from;
+  return -1;
+}
+
+function planLabel(t) {
+  if (!hasPlan(t)) return "No dates";
+  var p = periodByKey(t.plan.period);
+  var n = num(t.plan.days);
+  var len = n > 0 ? (n === 1 ? "1 day" : n + " days") : "Some days";
+  return len + " · " + (p.k === "year" ? "in " + t.plan.year : p.label + " " + t.plan.year);
 }
 
 function tripsForYear(y) {
@@ -998,8 +1186,11 @@ function windowElapsed(y) {
    consume it. Undated trips are still to come, so they count. */
 function inWindow(t, y) {
   var w = budgetWindow(y);
-  if (!w.partial || !t.start) return true;
-  return t.start >= w.fromISO;
+  if (!w.partial) return true;
+  if (t.start) return t.start >= w.fromISO;
+  /* a rough plan counts if any of its months reach the window */
+  if (hasPlan(t)) return periodByKey(t.plan.period).to >= w.from.getMonth();
+  return true;
 }
 
 function yearStats(y) {
@@ -1142,10 +1333,10 @@ function monthly(y) {
   for (i = 0; i < trips.length; i++) {
     var t = trips[i], tot = tripTotal(t);
     if (tot === 0) continue;
-    var d = parseISO(t.start);
+    var mo = tripMonth(t);
     var done = t.status === "Done";
-    if (!d) { if (done) undated.spent += tot; else undated.planned += tot; continue; }
-    if (done) spent[d.getMonth()] += tot; else planned[d.getMonth()] += tot;
+    if (mo < 0) { if (done) undated.spent += tot; else undated.planned += tot; continue; }
+    if (done) spent[mo] += tot; else planned[mo] += tot;
   }
 
   var max = 0;
@@ -1574,7 +1765,8 @@ function weekList(startISO, lens) {
     for (var k = 0; k < hs.length; k++) {
       if (lens !== "both" && hs[k].c !== lens) continue;
       body += '<div class="ev"><i class="' + (hs[k].c === "ES" ? "d-es" : "d-se") + '"></i><span>' +
-        esc(hs[k].n) + "<br><small>" + (hs[k].c === "ES" ? "Spain" : "Sweden") + " \u00b7 " + esc(hs[k].k) + "</small></span></div>";
+        esc(hs[k].n) + "<br><small>" + (hs[k].c === "ES" ? "Spain" : "Sweden") + " \u00b7 " + esc(hs[k].k) +
+        (hs[k].p ? " \u00b7 provisional" : "") + "</small></span></div>";
     }
     for (var t = 0; t < tps.length; t++) {
       body += '<div class="ev"><i class="d-tr"></i><span>' + esc(tps[t].name || "Untitled trip") +
@@ -1635,7 +1827,8 @@ function renderCal() {
     for (var k2 = 0; k2 < hs2.length; k2++) {
       if (lens !== "both" && hs2[k2].c !== lens) continue;
       body2 += '<div class="ev"><i class="' + (hs2[k2].c === "ES" ? "d-es" : "d-se") + '"></i><span>' +
-        esc(hs2[k2].n) + "<br><small>" + (hs2[k2].c === "ES" ? "Spain" : "Sweden") + " \u00b7 " + esc(hs2[k2].k) + "</small></span></div>";
+        esc(hs2[k2].n) + "<br><small>" + (hs2[k2].c === "ES" ? "Spain" : "Sweden") + " \u00b7 " + esc(hs2[k2].k) +
+        (hs2[k2].p ? " \u00b7 provisional" : "") + "</small></span></div>";
     }
     for (var t2 = 0; t2 < tps2.length; t2++) {
       body2 += '<div class="ev"><i class="d-tr"></i><span>' + esc(tps2[t2].name || "Untitled trip") +
@@ -1646,6 +1839,16 @@ function renderCal() {
   }
 
   h += "</div>";
+
+  /* what the holiday data can and cannot promise for this year */
+  if (!holidayYearCovered(y)) {
+    h += '<p class="hint" style="margin:10px 2px 0">No holiday data for ' + y +
+      " \u2014 only weekends are marked. Covered years: 2026\u2013" + COMPUTED_TO + ".</p>";
+  } else if (y > 2026 && yearHasProvisional(y)) {
+    h += '<p class="hint" style="margin:10px 2px 0">Spanish dates for ' + y +
+      " are computed. Days marked <em class=\"prov\">provisional</em> are Sunday holidays moved to the Monday, " +
+      "which the official calendar confirms each year.</p>";
+  }
 
   /* windows */
   var wins = windows(y, lens);
@@ -1680,6 +1883,8 @@ function renderCal() {
 function blankTrip() {
   return {
     id: uid(), name: "", countries: [], start: "", end: "",
+    plan: null,                 /* {year, period, days} when dates aren't settled */
+    planYear: ui.year,          /* the year on screen when it was created */
     status: STATUSES[0], notes: "", expenses: [blankExpense()]
   };
 }
@@ -1747,10 +1952,50 @@ function tripForm(t) {
 
   h += countryPicker(t.countries || []);
 
-  h += '<div class="two">' +
-    '<div class="field"><span class="label">Start</span><input id="f-start" type="date" value="' + esc(t.start) + '"></div>' +
-    '<div class="field"><span class="label">End</span><input id="f-end" type="date" value="' + esc(t.end) + '"></div>' +
-  "</div>";
+  /* dates: settled, or a length and a rough period */
+  var rough = hasPlan(t) && !t.start;
+  h += '<div class="field"><span class="label">When</span>' +
+    '<div class="seg" style="margin-bottom:9px">' +
+      '<button data-act="date-mode" data-v="exact"' + (rough ? "" : ' class="is-on"') + ">Exact dates</button>" +
+      '<button data-act="date-mode" data-v="rough"' + (rough ? ' class="is-on"' : "") + ">Rough plan</button>" +
+    "</div>";
+
+  if (!rough) {
+    h += '<div class="two">' +
+      '<div class="field"><span class="label">Start</span>' +
+        '<input id="f-start" type="date" value="' + esc(t.start) + '"></div>' +
+      '<div class="field"><span class="label">End</span>' +
+        '<input id="f-end" type="date" value="' + esc(t.end) + '"' +
+        (t.start ? ' min="' + esc(t.start) + '"' : "") + "></div>" +
+    "</div>";
+  } else {
+    var pl = t.plan || { year: ui.year, period: "year", days: 0 };
+    var chips = "";
+    for (var li = 0; li < LENGTHS.length; li++) {
+      chips += '<button class="chip' + (num(pl.days) === LENGTHS[li].d ? " on" : "") +
+        '" data-act="plan-days" data-v="' + LENGTHS[li].d + '">' + esc(LENGTHS[li].label) + "</button>";
+    }
+    var opts = "";
+    for (var pi = 0; pi < PERIODS.length; pi++) {
+      opts += '<option value="' + esc(PERIODS[pi].k) + '"' + (PERIODS[pi].k === pl.period ? " selected" : "") +
+        ">" + esc(PERIODS[pi].label) + "</option>";
+    }
+    h += '<div class="chips" style="margin-bottom:8px">' + chips + "</div>" +
+      '<div class="two">' +
+        '<div class="field"><span class="label">How long</span>' +
+          '<input id="f-plan-days" class="num-in" type="text" inputmode="numeric" placeholder="days" value="' +
+            (num(pl.days) ? esc(String(num(pl.days))) : "") + '"></div>' +
+        '<div class="field"><span class="label">When roughly</span>' +
+          '<select id="f-plan-period">' + opts + "</select></div>" +
+      "</div>" +
+      '<div class="field" style="margin-bottom:0"><span class="label">Year</span>' +
+        '<input id="f-plan-year" class="num-in" type="text" inputmode="numeric" value="' +
+          esc(String(pl.year || ui.year)) + '"></div>' +
+      '<p class="hint" style="margin:7px 0 0">Counts against ' + esc(String(pl.year || ui.year)) +
+        ", and sits in the first month of that stretch on the chart. It won\u2019t appear in the calendar " +
+        "until it has real dates.</p>";
+  }
+  h += "</div>";
 
   h += '<div class="field"><span class="label">Status</span><select id="f-status">' + optList(STATUSES, t.status) + "</select></div>";
 
@@ -1853,12 +2098,25 @@ function readForm() {
     id: d.id,
     name: el("f-name").value.trim(),
     countries: (d.countries || []).slice(),
-    start: el("f-start").value || "",
-    end: el("f-end").value || "",
+    start: el("f-start") ? (el("f-start").value || "") : "",
+    end: el("f-end") ? (el("f-end").value || "") : "",
+    plan: d.plan ? { year: d.plan.year, period: d.plan.period, days: d.plan.days } : null,
+    planYear: d.planYear || ui.year,
     status: el("f-status").value,
     notes: el("f-notes").value,
     expenses: []
   };
+
+  if (el("f-plan-year")) {
+    var yr = parseInt(el("f-plan-year").value, 10);
+    out.plan = {
+      year: (yr >= 1970 && yr <= 3000) ? yr : (d.plan && d.plan.year) || ui.year,
+      period: el("f-plan-period").value,
+      days: Math.max(0, Math.min(366, Math.round(num(el("f-plan-days").value))))
+    };
+    out.start = "";
+    out.end = "";
+  }
 
   /* read the rows back in DOM order, falling back to the draft for any row
      that is not currently rendered */
@@ -1877,7 +2135,8 @@ function readForm() {
       url: urlN ? String(urlN.value).trim() : e.url
     });
   }
-  if (out.start && out.end && out.end < out.start) { var sw = out.start; out.start = out.end; out.end = sw; }
+  if (out.start && out.end && out.end < out.start) out.end = out.start;
+  if (out.start && !out.end) out.end = out.start;      /* a day trip by default */
   return out;
 }
 
@@ -1914,7 +2173,7 @@ function tripCard(t) {
     for (var q = 0; q < t.countries.length; q++) names.push(countryLabel(t.countries[q]));
     meta.push(esc(names.join(" · ")));
   }
-  meta.push(esc(fmtRange(t.start, t.end)));
+  meta.push(esc(t.start ? fmtRange(t.start, t.end) : planLabel(t)));
 
   var h = '<div class="trip">' +
     '<button class="trip-top" data-act="trip-open" data-v="' + esc(t.id) + '" aria-expanded="' + (open ? "true" : "false") + '">' +
@@ -1975,24 +2234,58 @@ function tripCard(t) {
   return h + "</div>";
 }
 
+function tripGroups() {
+  var byYear = {}, years = [];
+  for (var i = 0; i < state.trips.length; i++) {
+    var y = tripYear(state.trips[i]);
+    if (!byYear[y]) { byYear[y] = []; years.push(y); }
+    byYear[y].push(state.trips[i]);
+  }
+  years.sort(function (a, b) { return a - b; });
+  var out = [];
+  for (var j = 0; j < years.length; j++) {
+    var list = byYear[years[j]].slice().sort(function (a, b) { return tripTotal(b) - tripTotal(a); });
+    var tot = 0;
+    for (var k = 0; k < list.length; k++) tot += tripTotal(list[k]);
+    out.push({ year: years[j], trips: list, total: tot });
+  }
+  return out;
+}
+
 function renderTrips() {
   var h = "";
-  var sorted = state.trips.slice().sort(function (a, b) { return tripTotal(b) - tripTotal(a); });
+  var groups = tripGroups();
 
-  var grand = 0;
-  for (var g = 0; g < sorted.length; g++) grand += tripTotal(sorted[g]);
+  var grand = 0, count = 0;
+  for (var g = 0; g < groups.length; g++) { grand += groups[g].total; count += groups[g].trips.length; }
 
-  h += '<div class="card"><div class="card-head"><span class="label">Trips \u00b7 ' + sorted.length +
-       '</span><span class="trip-tot">' + money(grand) + "</span></div>" +
-       '<button class="btn primary" style="width:100%" data-act="trip-new">＋ Add a trip</button></div>';
+  /* the year in view is shared with the dashboard, and is where a new trip lands */
+  h += '<div class="card">' +
+    '<div class="card-head"><span class="label">Planning</span>' +
+      '<span class="yearsw">' +
+        '<button class="stepper" data-act="year" data-v="-1" aria-label="Previous year">\u2039</button>' +
+        '<span class="y num">' + ui.year + "</span>" +
+        '<button class="stepper" data-act="year" data-v="1" aria-label="Next year">\u203a</button>' +
+      "</span></div>" +
+    '<button class="btn primary" style="width:100%" data-act="trip-new">＋ Add a trip to ' + ui.year + "</button>" +
+    '<p class="hint" style="margin:8px 0 0">' + count + (count === 1 ? " trip" : " trips") +
+      " across all years \u00b7 " + money(grand) + " total. Pick another year above to plan it instead.</p>" +
+  "</div>";
 
   if (ui.formOpen) h += tripForm(ui.draft || blankTrip());
 
-  if (!sorted.length) {
-    h += '<div class="card"><p class="empty" style="margin:0">No trips yet. Add one and it will show up on the dashboard ' +
-         "and in the calendar.</p></div>";
+  if (!groups.length) {
+    h += '<div class="card"><p class="empty" style="margin:0">No trips yet. Add one and it will show up on the ' +
+         "dashboard and in the calendar.</p></div>";
   } else {
-    for (var i = 0; i < sorted.length; i++) h += tripCard(sorted[i]);
+    for (var gi = 0; gi < groups.length; gi++) {
+      var grp = groups[gi];
+      h += '<div class="ygroup' + (grp.year === ui.year ? " is-now" : "") + '">' +
+        '<span class="ylabel">' + grp.year + (grp.year === ui.year ? " · planning" : "") + "</span>" +
+        '<span class="ymeta">' + grp.trips.length + (grp.trips.length === 1 ? " trip" : " trips") +
+          " \u00b7 " + money(grp.total) + "</span></div>";
+      for (var ti = 0; ti < grp.trips.length; ti++) h += tripCard(grp.trips[ti]);
+    }
   }
 
   el("view-trips").innerHTML = h;
@@ -2369,6 +2662,8 @@ function migrateTrip(t) {
   var out = {
     id: t.id, name: t.name, countries: (t.countries || []).slice(),
     start: t.start, end: t.end, status: t.status, notes: t.notes,
+    plan: t.plan ? { year: t.plan.year, period: t.plan.period, days: t.plan.days } : null,
+    planYear: t.planYear || PLANNING_YEAR,
     expenses: []
   };
   var src = t.expenses || [];
@@ -2401,6 +2696,12 @@ document.addEventListener("click", function (ev) {
     case "year":
       ui.year += parseInt(v, 10);
       ui.paceMonth = null;
+      /* a rough-plan draft follows the year you are planning */
+      if (ui.formOpen && ui.draft) {
+        ui.draft = readForm();
+        ui.draft.planYear = ui.year;
+        if (ui.draft.plan) ui.draft.plan.year = ui.year;
+      }
       render();
       break;
 
@@ -2528,6 +2829,33 @@ document.addEventListener("click", function (ev) {
       save();
       refreshForm();
       toast("Removed " + goner.label + ".");
+      break;
+
+    /* ---- dates ---- */
+    case "date-mode":
+      if (ui.formOpen) {
+        ui.draft = readForm();
+        if (v === "rough") {
+          if (!ui.draft.plan) {
+            ui.draft.plan = { year: ui.draft.planYear || ui.year, period: "year", days: 0 };
+          }
+          ui.draft.start = "";
+          ui.draft.end = "";
+        } else {
+          ui.draft.plan = null;
+        }
+        renderTrips();
+      }
+      break;
+
+    case "plan-days":
+      if (ui.formOpen) {
+        ui.draft = readForm();
+        var want = parseInt(v, 10);
+        if (!ui.draft.plan) ui.draft.plan = { year: ui.year, period: "year", days: 0 };
+        ui.draft.plan.days = ui.draft.plan.days === want ? 0 : want;
+        renderTrips();
+      }
       break;
 
     /* ---- expenses ---- */
@@ -2703,6 +3031,17 @@ document.addEventListener("input", function (ev) {
 
   if (t.id === "f-newcat") { ui.newCatText = t.value; return; }
 
+  /* an end date cannot precede the start, and a fresh start date proposes the
+     same day so a one-day trip needs no second pick */
+  if (t.id === "f-start") {
+    var endN = el("f-end");
+    if (endN) {
+      endN.min = t.value || "";
+      if (t.value && (!endN.value || endN.value < t.value)) endN.value = t.value;
+    }
+    return;
+  }
+
   if (t.className && t.className.indexOf("f-amt") >= 0) {
     var out = el("f-total");
     if (out) out.textContent = money(formTotal());
@@ -2765,10 +3104,14 @@ function init() {
 
   var now = new Date();
   ui.year = now.getFullYear();
-  ui.calYear = PLANNING_YEAR;
-  ui.calMonth = now.getFullYear() === PLANNING_YEAR ? now.getMonth() : 0;
-  ui.selDay = now.getFullYear() === PLANNING_YEAR ? todayISO() : "";
-  ui.weekStart = iso(weekStartOf(now.getFullYear() === PLANNING_YEAR ? now : new Date(PLANNING_YEAR, 0, 1)));
+  /* open the calendar on this year while there is data for it, rather than a
+     frozen 2026 that goes stale the moment the year turns */
+  var calY = holidayYearCovered(now.getFullYear()) ? now.getFullYear() : PLANNING_YEAR;
+  var onThisYear = calY === now.getFullYear();
+  ui.calYear = calY;
+  ui.calMonth = onThisYear ? now.getMonth() : 0;
+  ui.selDay = onThisYear ? todayISO() : "";
+  ui.weekStart = iso(weekStartOf(onThisYear ? now : new Date(calY, 0, 1)));
 
   /* If migration reshaped a stored file, write the normalised version back now
      rather than leaving retired keys around until the next edit. Untouched

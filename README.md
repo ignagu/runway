@@ -8,12 +8,13 @@ Three tabs:
 
 - **Dashboard** — a budget per year, what's allocated vs. free, whether it is
   pacing ahead or behind, and a month-by-month bar chart of spent vs. planned.
-- **Calendar** — year, month and week views over the 2026 Spanish (Madrid) and
-  Swedish holidays, long-weekend runs and single-day bridges (*puentes*), plus
-  your own trips.
-- **Trips** — trips tagged with one or more countries, itemised into expenses
-  (several per category, each with an optional link) under categories you can
-  extend.
+- **Calendar** — year, month and week views over Spanish (Madrid) and Swedish
+  holidays through 2031, long-weekend runs and single-day bridges (*puentes*),
+  plus your own trips.
+- **Trips** — grouped by year, tagged with one or more countries, itemised into
+  expenses (several per category, each with an optional link) under categories
+  you can extend. A trip can carry exact dates or just a length and a rough
+  period, for something you know you want but haven't pinned down.
 
 ## Never commit your data
 
@@ -105,6 +106,17 @@ They stay visible (faded in the chart, and their total called out under the
 tiles) so nothing is quietly dropped. Budgets stored without a window keep the
 full year, so existing figures do not shift.
 
+## Planning a trip you haven't pinned down
+
+A trip can carry exact dates, or a **rough plan** — a length and a period, like
+"14 days, Spring 2028". It counts against its year like any other trip and sits
+in the first month of that period on the month chart. It does not appear in the
+calendar, because it has no days to mark; inventing some would be false
+precision. Give it real dates and the plan is replaced.
+
+The year switcher is shared between the dashboard and the Trips tab, so the year
+you are looking at is the year a new trip lands in.
+
 ## Expenses
 
 A trip is a list of expenses. Each one has a category, an optional label, an
@@ -127,7 +139,7 @@ against it anywhere can be removed.
 
 ## Holiday data
 
-2026 only, hard-coded in `index.html`:
+**2026** is a verified list hard-coded in `index.html`:
 
 - **Spain** — the City of Madrid calendar: national + Comunidad de Madrid +
   Madrid local days.
@@ -135,8 +147,19 @@ against it anywhere can be removed.
   (Midsommarafton, Julafton, Nyårsafton). The window finder treats those as
   days off, which is how they work in practice.
 
-Extending to 2027+ means computing the movable feasts (Easter and everything
-hanging off it) and re-checking each national list — don't guess the dates.
+**2027–2031** are computed from rules at load, never typed from memory. Easter
+comes from the anonymous Gregorian computus; everything movable hangs off it.
+
+Sweden's calendar is entirely rule-based, so those years are exact. Spain's is
+not: which national holiday moves when it falls on a Sunday is decided each year
+in the BOE *calendario laboral*. Those transfers are shown on the Monday and
+labelled **provisional**, with a note in the calendar — the app doesn't assert a
+date it cannot know. A regional or local feast falling on a Sunday keeps its
+real date and simply isn't an extra day off.
+
+Both rule sets are validated by generating 2026 and diffing against the verified
+list above; they reproduce it exactly. Past 2031 the calendar says it has no
+data rather than showing a year that merely looks free of holidays.
 
 ## Backlog
 
