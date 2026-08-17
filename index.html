@@ -101,15 +101,17 @@ textarea{resize:vertical; min-height:64px}
 input.num-in{font-family:var(--mono); font-variant-numeric:tabular-nums}
 .field{margin-bottom:10px}
 .field > .label{display:block; margin-bottom:5px}
-/* Start/End dates. A native date control has a wide intrinsic minimum —
-   wider on iOS Safari than on Chromium — so a fixed 1fr 1fr forced each field
-   past half the row and the two collided. auto-fit drops to a single column
-   whenever two real controls will not fit, which is content-driven rather than
-   a guessed breakpoint: side by side on tablet and desktop, stacked on phones. */
-.two{display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); gap:10px}
+/* Start/End dates always stack.
+   A native date control keeps a wide intrinsic minimum that iOS Safari will
+   not shrink — min-width:0 does not bind it — and it is wider there than in
+   Chromium, so it cannot be measured from here. Side by side, the second
+   field overflowed its track and overlapped the first on a real iPad even at
+   ~213px per column. The app is capped at 560px, so there is no width at
+   which two of these reliably fit: one row each, and the problem is gone by
+   construction rather than by a threshold that has already been wrong twice. */
+.two{display:grid; grid-template-columns:1fr; gap:10px}
 .two > .field{min-width:0}
 .two input{min-width:0}
-.two input[type="date"]{padding-left:9px; padding-right:9px}
 .seg{display:flex; gap:4px; background:var(--paper); border:1px solid var(--line); border-radius:11px; padding:3px}
 .seg button{
   flex:1; appearance:none; border:0; background:transparent; border-radius:8px; padding:7px 4px;

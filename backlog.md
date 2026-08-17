@@ -56,19 +56,27 @@ minimum width. A native `input[type=date]` at the app's mandatory 16px font has
 a wide intrinsic minimum — wider in iOS Safari than in Chromium, which is why
 desktop testing missed it. Each field demanded more than half the row.
 
-**Fix.** `repeat(auto-fit, minmax(190px, 1fr))` plus `min-width: 0` on the grid
-items and inputs. This is content-driven rather than a guessed breakpoint: the
-row keeps two columns where two real controls fit (iPad, desktop) and drops to
-one where they don't (phones).
+**First fix, insufficient.** `repeat(auto-fit, minmax(190px, 1fr))` plus
+`min-width: 0`, meant to keep two columns where two real controls fit and drop
+to one where they don't. It still overlapped on a real iPad at roughly 213px
+per column: iOS Safari does not let `min-width: 0` shrink a date control below
+its intrinsic minimum, and that minimum is larger than the 190px the test
+emulated.
+
+**Actual fix.** Start and End always stack, one row each. The app is capped at
+560px, so there is no width at which two native date controls reliably fit
+side by side, and any threshold is a guess that had already been wrong twice.
+Stacking removes the failure mode by construction.
 
 The same pass fixed a separate overflow: the category grid pushed the page
 ~5px wide at 375px and ~60px at 320px, because a fixed-width amount input and a
 non-truncating label couldn't shrink.
 
-**Note for anyone re-testing:** Chromium cannot reproduce the original bug — its
-native date control is narrower. The layout suite emulates a wider control by
-forcing `min-width: 190px`, which is a proxy, not proof. The real check is an
-iPad.
+**Lesson worth keeping:** Chromium cannot reproduce this — its native date
+control is narrower, and it honours `min-width: 0` where iOS does not. Emulating
+a wider control by forcing `min-width` is a proxy that passed while the real
+device still failed. Where a native control's size cannot be measured, prefer a
+layout that does not depend on knowing it.
 
 ---
 
